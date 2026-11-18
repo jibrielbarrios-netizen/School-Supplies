@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>School Supplies AI Classifier — Classroom Edition</title>
+  <!-- Google Fonts for Classroom Feel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- TensorFlow.js & Teachable Machine Image Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <style>
+    :root {
+      --desk-bg: #f3e5ab;
+      --desk-grain: #ebd892;
+      --chalkboard: #1f4031;
+      --chalkboard-dark: #162e23;
+      --wood-frame: #8b5a2b;
+      --wood-dark: #5c3a1a;
+      --paper: #fffdf7;
+      --ruled-line: #cfe2f3;
+      --margin-red: #f28b82;
+      --ink: #1e293b;
+      --ink-muted: #475569;
+      --pencil-yellow: #facc15;
+      --pencil-hover: #eab308;
+      --eraser-pink: #f43f5e;
+      --eraser-hover: #e11d48;
+      --marker-blue: #2563eb;
+      --highlighter-green: #22c55e;
+      --sticky-yellow: #fef08a;
+      --sticky-blue: #bae6fd;
+      --sticky-pink: #fbcfe8;
+      --sticky-green: #bbf7d0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--desk-bg);
+      background-image:
+        repeating-linear-gradient(
+          90deg,
+          rgba(139, 90, 43, 0.04) 0px,
+          rgba(139, 90, 43, 0.04) 2px,
+          transparent 2px,
+          transparent 18px
+        ),
+        radial-gradient(circle at top, #f7ecc1, var(--desk-grain));
+      color: var(--ink);
+      line-height: 1.6;
+      padding-bottom: 4rem;
+    }
+
+    /* Chalkboard Header */
+    header {
+      background: radial-gradient(circle at center, var(--chalkboard) 0%, var(--chalkboard-dark) 100%);
+      border-bottom: 12px solid var(--wood-frame);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 -4px 0 var(--wood-dark);
+      padding: 2.75rem 1.5rem 2.5rem;
+      text-align: center;
+      color: #f8fafc;
+      position: relative;
+    }
+
+    /* Chalk tray & eraser decoration */
+    header::after {
+      content: "";
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      box-shadow: 35px 0 0 #38bdf8, -45px 0 0 #f43f5e;
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: "Patrick Hand", cursive;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fde047;
+      border: 1.5px dashed rgba(253, 224, 71, 0.65);
+      padding: 0.25rem 0.9rem;
+      border-radius: 999px;
+      margin
