@@ -3,155 +3,175 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>School Supplies AI Classifier — Live Demo</title>
-  <!-- TensorFlow.js & Teachable Machine Image Library -->
+  <title>School Supplies AI Classifier — Classroom Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --surface-hover: #334155;
-      --border: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --accent: #10b981;
-      --danger: #ef4444;
-      --radius: 14px;
+      --desk-bg: #f3e5ab;
+      --desk-grain: #ebd892;
+      --chalkboard: #1f4031;
+      --chalkboard-dark: #162e23;
+      --wood-frame: #8b5a2b;
+      --wood-dark: #5c3a1a;
+      --paper: #fffdf7;
+      --ruled-line: #cfe2f3;
+      --margin-red: #f28b82;
+      --ink: #1e293b;
+      --ink-muted: #475569;
+      --pencil-yellow: #facc15;
+      --pencil-hover: #eab308;
+      --eraser-pink: #f43f5e;
+      --eraser-hover: #e11d48;
+      --marker-blue: #2563eb;
+      --highlighter-green: #22c55e;
+      --sticky-yellow: #fef08a;
+      --sticky-blue: #bae6fd;
+      --sticky-pink: #fbcfe8;
+      --sticky-green: #bbf7d0;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text-main);
+      font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--desk-bg);
+      background-image:
+        repeating-linear-gradient(90deg, rgba(139, 90, 43, 0.04) 0px, rgba(139, 90, 43, 0.04) 2px, transparent 2px, transparent 18px),
+        radial-gradient(circle at top, #f7ecc1, var(--desk-grain));
+      color: var(--ink);
       line-height: 1.6;
       padding-bottom: 4rem;
     }
 
     header {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border-bottom: 1px solid var(--border);
-      padding: 3rem 1.5rem;
+      background: radial-gradient(circle at center, var(--chalkboard) 0%, var(--chalkboard-dark) 100%);
+      border-bottom: 12px solid var(--wood-frame);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 -4px 0 var(--wood-dark);
+      padding: 2.75rem 1.5rem 2.5rem;
       text-align: center;
+      color: #f8fafc;
+      position: relative;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      box-shadow: 35px 0 0 #38bdf8, -45px 0 0 #f43f5e;
     }
 
     .badge {
       display: inline-block;
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      padding: 0.25rem 0.75rem;
+      font-family: "Patrick Hand", cursive;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fde047;
+      border: 1.5px dashed rgba(253, 224, 71, 0.65);
+      padding: 0.25rem 0.9rem;
       border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
+      margin-bottom: 0.85rem;
     }
 
     header h1 {
-      font-size: clamp(1.8rem, 4vw, 2.75rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.75rem;
+      font-family: "Fredoka", sans-serif;
+      font-size: clamp(2rem, 4.5vw, 3rem);
+      font-weight: 700;
+      text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.35);
+      margin-bottom: 0.65rem;
     }
 
     header p {
+      font-family: "Patrick Hand", cursive;
       max-width: 680px;
       margin: 0 auto;
-      color: var(--text-muted);
-      font-size: 1.05rem;
+      color: #e2e8f0;
+      font-size: 1.25rem;
     }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem 0;
-    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 2.25rem 1.5rem 0; }
 
-    /* Status Banner */
     .status-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 1rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 0.9rem 1.25rem;
-      border-radius: var(--radius);
+      background: var(--paper);
+      border: 2px solid #cbd5e1;
+      border-left: 8px solid var(--marker-blue);
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
       margin-bottom: 2rem;
     }
 
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 0.95rem;
-      font-weight: 500;
-    }
+    .status-indicator { display: flex; align-items: center; gap: 0.65rem; font-size: 0.95rem; font-weight: 700; }
 
     .dot {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      background-color: #eab308;
-      box-shadow: 0 0 8px #eab308;
+      background-color: #f59e0b;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 2px #f59e0b;
     }
+    .dot.ready { background-color: var(--highlighter-green); box-shadow: 0 0 0 2px var(--highlighter-green); }
+    .dot.error { background-color: var(--eraser-pink); box-shadow: 0 0 0 2px var(--eraser-pink); }
 
-    .dot.ready {
-      background-color: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
-    }
-
-    .dot.error {
-      background-color: var(--danger);
-      box-shadow: 0 0 8px var(--danger);
-    }
-
-    /* Main Workspace Grid */
     .workspace {
       display: grid;
       grid-template-columns: 1.1fr 0.9fr;
       gap: 1.75rem;
       margin-bottom: 3rem;
     }
+    @media (max-width: 850px) { .workspace { grid-template-columns: 1fr; } }
 
-    @media (max-width: 850px) {
-      .workspace {
-        grid-template-columns: 1fr;
-      }
+    .notebook-card {
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(90deg, transparent 42px, var(--margin-red) 42px, var(--margin-red) 44px, transparent 44px),
+        repeating-linear-gradient(transparent, transparent 27px, var(--ruled-line) 28px);
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 1.75rem 1.75rem 1.75rem 3.5rem;
+      box-shadow: 4px 6px 0px rgba(139, 90, 43, 0.25);
+      position: relative;
     }
 
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
+    .notebook-card::before {
+      content: "";
+      position: absolute;
+      top: 18px;
+      bottom: 18px;
+      left: 12px;
+      width: 14px;
+      background-image: radial-gradient(circle, #64748b 45%, transparent 50%);
+      background-size: 14px 28px;
     }
 
-    .card h2 {
-      font-size: 1.25rem;
+    .notebook-card h2 {
+      font-family: "Fredoka", sans-serif;
+      font-size: 1.35rem;
+      color: var(--chalkboard);
       margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
     }
 
-    /* Mode Tabs */
     .tabs {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0.5rem;
-      background: var(--bg);
+      background: #e2e8f0;
       padding: 0.35rem;
       border-radius: 10px;
       margin-bottom: 1.25rem;
@@ -160,279 +180,176 @@
     .tab-btn {
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      padding: 0.65rem 1rem;
+      color: var(--ink-muted);
+      padding: 0.6rem 1rem;
       border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
+      font-family: "Fredoka", sans-serif;
+      font-size: 1rem;
       cursor: pointer;
-      transition: all 0.2s ease;
     }
 
-    .tab-btn.active {
-      background: var(--primary);
-      color: #fff;
-    }
+    .tab-btn.active { background: var(--chalkboard); color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
 
-    /* Viewport Box */
     .viewport {
       width: 100%;
       aspect-ratio: 1 / 1;
-      max-height: 380px;
-      background: #0b1120;
-      border: 2px dashed var(--border);
+      max-height: 360px;
+      background: #f8fafc;
+      border: 3px dashed #94a3b8;
       border-radius: 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      position: relative;
       margin: 0 auto 1.25rem;
     }
 
-    .viewport canvas,
-    .viewport img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .viewport canvas, .viewport img { width: 100%; height: 100%; object-fit: cover; }
+    .placeholder-text { text-align: center; color: var(--ink-muted); padding: 1.5rem; font-size: 0.98rem; }
 
-    .placeholder-text {
-      text-align: center;
-      color: var(--text-muted);
-      padding: 1.5rem;
-      font-size: 0.95rem;
-    }
+    .controls { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
 
-    /* Controls */
-    .controls {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .btn {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.35rem;
-      border-radius: 8px;
-      font-size: 0.95rem;
+    .btn, .file-label {
+      background: var(--pencil-yellow);
+      color: #1e293b;
+      border: 2px solid #ca8a04;
+      padding: 0.7rem 1.35rem;
+      border-radius: 10px;
+      font-family: "Fredoka", sans-serif;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.1s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .btn:hover:not(:disabled) {
-      background: var(--primary-hover);
-    }
-
-    .btn:active:not(:disabled) {
-      transform: scale(0.98);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-danger {
-      background: var(--danger);
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      background: #dc2626;
-    }
-
-    .file-label {
-      background: var(--primary);
-      color: white;
-      padding: 0.75rem 1.35rem;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
+      box-shadow: 0 3px 0 #ca8a04;
       display: inline-block;
-      transition: background 0.2s ease;
     }
 
-    .file-label:hover {
-      background: var(--primary-hover);
-    }
+    .btn:hover:not(:disabled), .file-label:hover { background: var(--pencil-hover); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-danger { background: var(--eraser-pink); color: #fff; border-color: #be123c; box-shadow: 0 3px 0 #be123c; }
+    .btn-danger:hover:not(:disabled) { background: var(--eraser-hover); }
+    input[type="file"] { display: none; }
 
-    input[type="file"] {
-      display: none;
-    }
-
-    /* Predictions Panel */
     .top-result {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: #dcfce7;
+      border: 2.5px solid #16a34a;
       border-radius: 12px;
-      padding: 1.15rem;
+      padding: 1rem;
       margin-bottom: 1.5rem;
       text-align: center;
+      transform: rotate(-0.75deg);
     }
 
-    .top-result-label {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--accent);
-      font-weight: 700;
-    }
-
-    .top-result-value {
-      font-size: 1.65rem;
-      font-weight: 800;
-      margin-top: 0.2rem;
-      color: #fff;
-    }
+    .top-result-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: #15803d; font-weight: 800; }
+    .top-result-value { font-family: "Fredoka", sans-serif; font-size: 1.65rem; font-weight: 700; margin-top: 0.15rem; color: #14532d; }
 
     .bars-container {
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
     }
 
-    .bar-item {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
+    .bar-item { display: flex; flex-direction: column; gap: 0.3rem; }
+    .bar-header { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 700; }
+    .bar-track { width: 100%; height: 14px; background: #e2e8f0; border-radius: 999px; overflow: hidden; border: 1px solid #cbd5e1; }
+    .bar-fill { height: 100%; width: 0%; background: var(--marker-blue); border-radius: 999px; transition: width 0.2s ease, background-color 0.2s ease; }
+    .bar-fill.winner { background: var(--highlighter-green); }
+
+    .bulletin-board {
+      background: #c68b59;
+      background-image: radial-gradient(rgba(92, 58, 26, 0.18) 1.5px, transparent 1.5px);
+      background-size: 12px 12px;
+      border: 10px solid var(--wood-frame);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18), inset 0 0 20px rgba(0, 0, 0, 0.15);
     }
 
-    .bar-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.95rem;
-      font-weight: 600;
+    .bulletin-header {
+      background: var(--paper);
+      display: inline-block;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 3px 4px 8px rgba(0, 0, 0, 0.15);
+      margin-bottom: 1.75rem;
+      border-top: 6px solid var(--eraser-pink);
     }
 
-    .bar-track {
-      width: 100%;
-      height: 12px;
-      background: var(--bg);
-      border-radius: 999px;
-      overflow: hidden;
+    .bulletin-header h2 { font-family: "Fredoka", sans-serif; font-size: 1.65rem; color: var(--chalkboard); margin-bottom: 0.35rem; }
+    .bulletin-header p { color: var(--ink-muted); font-size: 0.98rem; max-width: 720px; }
+
+    .impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.35rem; }
+
+    .sticky-note {
+      padding: 1.4rem 1.25rem 1.25rem;
+      border-radius: 4px 4px 18px 4px;
+      box-shadow: 3px 5px 10px rgba(0, 0, 0, 0.18);
+      position: relative;
     }
 
-    .bar-fill {
-      height: 100%;
-      width: 0%;
-      background: var(--primary);
-      border-radius: 999px;
-      transition: width 0.2s ease, background-color 0.2s ease;
+    .sticky-note::before {
+      content: "";
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: inset -2px -2px 3px rgba(0, 0, 0, 0.3), 0 2px 3px rgba(0, 0, 0, 0.3);
     }
 
-    .bar-fill.winner {
-      background: var(--accent);
-    }
+    .sticky-yellow { background: var(--sticky-yellow); transform: rotate(-1.2deg); }
+    .sticky-blue   { background: var(--sticky-blue);   transform: rotate(1deg); }
+    .sticky-pink   { background: var(--sticky-pink);   transform: rotate(-0.8deg); }
+    .sticky-green  { background: var(--sticky-green);  transform: rotate(1.3deg); }
 
-    /* Community Significance Section */
-    .community-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 2.25rem;
-    }
+    .sticky-note h3 { font-family: "Fredoka", sans-serif; font-size: 1.15rem; margin-top: 0.4rem; margin-bottom: 0.45rem; color: #0f172a; }
+    .sticky-note p { font-size: 0.93rem; color: #1e293b; }
 
-    .community-header {
-      max-width: 750px;
-      margin-bottom: 2rem;
-    }
-
-    .community-header h2 {
-      font-size: 1.75rem;
-      margin-bottom: 0.6rem;
-    }
-
-    .community-header p {
-      color: var(--text-muted);
-    }
-
-    .impact-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .impact-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.35rem;
-    }
-
-    .impact-card h3 {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-      color: #60a5fa;
-    }
-
-    .impact-card p {
-      font-size: 0.93rem;
-      color: var(--text-muted);
-    }
-
-    footer {
-      text-align: center;
-      margin-top: 3rem;
-      color: var(--text-muted);
-      font-size: 0.88rem;
-    }
-
-    footer a {
-      color: #60a5fa;
-      text-decoration: none;
-    }
-
-    .hidden {
-      display: none !important;
-    }
+    footer { text-align: center; margin-top: 2.75rem; color: var(--wood-dark); font-weight: 600; font-size: 0.92rem; }
+    footer a { color: var(--chalkboard); text-decoration: underline; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
   <header>
-    <span class="badge">School Supplies AI Classifier</span>
-    <h1>Smart Classroom Supply Identifier</h1>
+    <span class="badge">Classroom AI Science Project</span>
+    <h1>School Supplies Identifier</h1>
     <p>
-      Test your Teachable Machine model in real time. Use your live webcam or upload a photo of classroom materials to instantly identify items with confidence metrics.
+      Hold a school supply up to the classroom webcam or upload a picture to see how Artificial Intelligence recognizes everyday study tools!
     </p>
   </header>
 
   <main class="container">
-    <!-- Model Connection Status -->
     <div class="status-bar">
       <div class="status-indicator">
         <span id="status-dot" class="dot"></span>
-        <span id="status-text">Loading model weights from Google Teachable Machine...</span>
+        <span id="status-text">Getting the classroom AI model ready...</span>
       </div>
-      <div style="font-size: 0.85rem; color: var(--text-muted);">
+      <div style="font-size: 0.88rem; color: var(--ink-muted); font-weight: 600;">
         Model ID: <code>bqIf4W5_E</code>
       </div>
     </div>
 
-    <!-- Interactive Model Tester -->
     <section class="workspace" aria-label="AI Model Testing Area">
-      <!-- Left Card: Input Source -->
-      <div class="card">
-        <h2>1. Choose Input Source</h2>
+      <div class="notebook-card">
+        <h2>1. Pick How to Test</h2>
         <div class="tabs">
           <button id="tab-webcam" class="tab-btn active" onclick="switchMode('webcam')">Live Webcam</button>
-          <button id="tab-upload" class="tab-btn" onclick="switchMode('upload')">Upload Image</button>
+          <button id="tab-upload" class="tab-btn" onclick="switchMode('upload')">Upload Photo</button>
         </div>
 
-        <!-- Webcam Mode -->
         <div id="webcam-panel">
           <div id="webcam-viewport" class="viewport">
             <div class="placeholder-text" id="webcam-placeholder">
-              Click <strong>Start Webcam</strong> below to begin live real-time detection.
+              Press <strong>Start Webcam</strong> below and hold up a pencil, notebook, or other supply!
             </div>
           </div>
           <div class="controls">
@@ -441,73 +358,68 @@
           </div>
         </div>
 
-        <!-- Upload Mode -->
         <div id="upload-panel" class="hidden">
           <div id="upload-viewport" class="viewport" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
             <div class="placeholder-text" id="upload-placeholder">
-              Drag & drop a school supply photo here, or click <strong>Choose Image</strong>.
+              Drag & drop a school supply photo here, or click <strong>Choose Photo</strong>.
             </div>
-            <img id="preview-image" class="hidden" alt="Uploaded preview for classification" />
+            <img id="preview-image" class="hidden" alt="Uploaded school supply preview" />
           </div>
           <div class="controls">
-            <label for="image-upload" class="file-label">Choose Image</label>
+            <label for="image-upload" class="file-label">Choose Photo</label>
             <input type="file" id="image-upload" accept="image/*" onchange="handleImageUpload(event)" />
           </div>
         </div>
       </div>
 
-      <!-- Right Card: Visual Feedback -->
-      <div class="card">
-        <h2>2. Classification Results</h2>
-
+      <div class="notebook-card">
+        <h2>2. AI Report Card</h2>
         <div class="top-result">
-          <div class="top-result-label">Top Identified Supply</div>
-          <div id="top-prediction" class="top-result-value">Waiting for input...</div>
+          <div class="top-result-label">Detected School Supply</div>
+          <div id="top-prediction" class="top-result-value">Waiting for item...</div>
         </div>
-
         <div id="bars-container" class="bars-container">
-          <p style="color: var(--text-muted); font-size: 0.92rem; text-align: center;">
-            Probability bars will appear once the model finishes loading.
+          <p style="color: var(--ink-muted); font-size: 0.92rem; text-align: center;">
+            Confidence meters will appear once the model finishes loading.
           </p>
         </div>
       </div>
     </section>
 
-    <!-- Community Significance Section -->
-    <section class="community-section" aria-labelledby="community-heading">
-      <div class="community-header">
-        <h2 id="community-heading">Significance to Our School & Community</h2>
+    <section class="bulletin-board" aria-labelledby="community-heading">
+      <div class="bulletin-header">
+        <h2 id="community-heading">Why This Matters to Our School & Community</h2>
         <p>
-          Automated object recognition brings practical efficiency to classrooms, libraries, and community resource centers, making organization seamless and engaging.
+          Smart visual recognition helps students, teachers, and local donation drives stay organized while making STEM learning interactive and fun.
         </p>
       </div>
 
       <div class="impact-grid">
-        <div class="impact-card">
-          <h3>Classroom Organization</h3>
+        <div class="sticky-note sticky-yellow">
+          <h3>Tidy Classrooms</h3>
           <p>
-            Helps students and teachers quickly sort, categorize, and inventory shared supplies like pencils, notebooks, and scissors efficiently.
+            Helps students quickly sort shared classroom bins, lost-and-found boxes, and art supplies into the right places at the end of the day.
           </p>
         </div>
 
-        <div class="impact-card">
-          <h3>Privacy-First Design</h3>
+        <div class="sticky-note sticky-blue">
+          <h3>Supply Drive Sorting</h3>
           <p>
-            All webcam feeds and uploaded images are processed locally in your browser using TensorFlow.js. No private photos ever leave your device.
+            Makes it easier for student clubs and community volunteers to inventory donated pencils, notebooks, and backpacks for local families.
           </p>
         </div>
 
-        <div class="impact-card">
-          <h3>Interactive STEM Learning</h3>
+        <div class="sticky-note sticky-pink">
+          <h3>Hands-On STEM</h3>
           <p>
-            Provides students with a hands-on window into artificial intelligence, demonstrating how neural networks interpret objects and compute confidence scores.
+            Turns the classroom into an AI lab—showing students how computers learn from examples and measure confidence percentages in real time.
           </p>
         </div>
 
-        <div class="impact-card">
-          <h3>Resource Accessibility</h3>
+        <div class="sticky-note sticky-green">
+          <h3>100% Student Privacy</h3>
           <p>
-            Runs smoothly on standard school laptops and mobile devices without requiring expensive software installations or cloud server setups.
+            Everything runs right inside your own web browser. Camera video and photos are never recorded, saved, or sent anywhere online.
           </p>
         </div>
       </div>
@@ -515,7 +427,7 @@
   </main>
 
   <footer>
-    GitHub Pages Project • Built with <a href="https://teachablemachine.withgoogle.com/" target="_blank" rel="noopener">Google Teachable Machine</a>
+    Classroom AI Project • Powered by <a href="https://teachablemachine.withgoogle.com/" target="_blank" rel="noopener">Google Teachable Machine</a>
   </footer>
 
   <script>
@@ -561,12 +473,12 @@
         });
 
         statusDot.classList.add("ready");
-        statusText.textContent = `Model ready (${maxPredictions} categories loaded)`;
+        statusText.textContent = `Class is in session! (${maxPredictions} supply categories loaded)`;
         startCamBtn.disabled = false;
       } catch (err) {
         console.error("Failed to load model:", err);
         statusDot.classList.add("error");
-        statusText.textContent = "Error loading model. Check your network connection.";
+        statusText.textContent = "Could not load the model. Check your internet connection.";
       }
     }
 
@@ -591,10 +503,10 @@
 
       try {
         startCamBtn.disabled = true;
-        startCamBtn.textContent = "Starting camera...";
+        startCamBtn.textContent = "Opening camera...";
 
         const flip = true;
-        webcam = new tmImage.Webcam(380, 380, flip);
+        webcam = new tmImage.Webcam(360, 360, flip);
         await webcam.setup();
         await webcam.play();
 
@@ -642,9 +554,7 @@
       animationFrameId = window.requestAnimationFrame(webcamLoop);
     }
 
-    function handleDragOver(event) {
-      event.preventDefault();
-    }
+    function handleDragOver(event) { event.preventDefault(); }
 
     function handleDrop(event) {
       event.preventDefault();
@@ -711,7 +621,7 @@
     }
 
     function resetBars() {
-      topPredictionEl.textContent = "Waiting for input...";
+      topPredictionEl.textContent = "Waiting for item...";
       for (let i = 0; i < maxPredictions; i++) {
         const fillEl = document.getElementById(`fill-${i}`);
         const percentEl = document.getElementById(`percent-${i}`);
