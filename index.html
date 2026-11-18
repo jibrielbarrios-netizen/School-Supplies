@@ -3,637 +3,1229 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>School Supplies AI Classifier — Classroom Edition</title>
+  <title>Campus AI Lab — Classroom Smart Scanner</title>
+  
+  <!-- Tailwind CSS via CDN for zero-build GitHub Pages deployment -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Handwritten Chalk ('Patrick Hand', 'Caveat') + Clean UI ('Plus Jakarta Sans', 'JetBrains Mono') -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-  <style>
-    :root {
-      --desk-bg: #f3e5ab;
-      --desk-grain: #ebd892;
-      --chalkboard: #1f4031;
-      --chalkboard-dark: #162e23;
-      --wood-frame: #8b5a2b;
-      --wood-dark: #5c3a1a;
-      --paper: #fffdf7;
-      --ruled-line: #cfe2f3;
-      --margin-red: #f28b82;
-      --ink: #1e293b;
-      --ink-muted: #475569;
-      --pencil-yellow: #facc15;
-      --pencil-hover: #eab308;
-      --eraser-pink: #f43f5e;
-      --eraser-hover: #e11d48;
-      --marker-blue: #2563eb;
-      --highlighter-green: #22c55e;
-      --sticky-yellow: #fef08a;
-      --sticky-blue: #bae6fd;
-      --sticky-pink: #fbcfe8;
-      --sticky-green: #bbf7d0;
-    }
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;600&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--desk-bg);
-      background-image:
-        repeating-linear-gradient(90deg, rgba(139, 90, 43, 0.04) 0px, rgba(139, 90, 43, 0.04) 2px, transparent 2px, transparent 18px),
-        radial-gradient(circle at top, #f7ecc1, var(--desk-grain));
-      color: var(--ink);
-      line-height: 1.6;
-      padding-bottom: 4rem;
-    }
-
-    header {
-      background: radial-gradient(circle at center, var(--chalkboard) 0%, var(--chalkboard-dark) 100%);
-      border-bottom: 12px solid var(--wood-frame);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 -4px 0 var(--wood-dark);
-      padding: 2.75rem 1.5rem 2.5rem;
-      text-align: center;
-      color: #f8fafc;
-      position: relative;
-    }
-
-    header::after {
-      content: "";
-      position: absolute;
-      bottom: -16px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 140px;
-      height: 10px;
-      background: #e2e8f0;
-      border-radius: 4px;
-      box-shadow: 35px 0 0 #38bdf8, -45px 0 0 #f43f5e;
-    }
-
-    .badge {
-      display: inline-block;
-      font-family: "Patrick Hand", cursive;
-      font-size: 1.1rem;
-      letter-spacing: 0.04em;
-      background: rgba(255, 255, 255, 0.12);
-      color: #fde047;
-      border: 1.5px dashed rgba(253, 224, 71, 0.65);
-      padding: 0.25rem 0.9rem;
-      border-radius: 999px;
-      margin-bottom: 0.85rem;
-    }
-
-    header h1 {
-      font-family: "Fredoka", sans-serif;
-      font-size: clamp(2rem, 4.5vw, 3rem);
-      font-weight: 700;
-      text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.35);
-      margin-bottom: 0.65rem;
-    }
-
-    header p {
-      font-family: "Patrick Hand", cursive;
-      max-width: 680px;
-      margin: 0 auto;
-      color: #e2e8f0;
-      font-size: 1.25rem;
-    }
-
-    .container { max-width: 1100px; margin: 0 auto; padding: 2.25rem 1.5rem 0; }
-
-    .status-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1rem;
-      background: var(--paper);
-      border: 2px solid #cbd5e1;
-      border-left: 8px solid var(--marker-blue);
-      padding: 0.85rem 1.25rem;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-      margin-bottom: 2rem;
-    }
-
-    .status-indicator { display: flex; align-items: center; gap: 0.65rem; font-size: 0.95rem; font-weight: 700; }
-
-    .dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background-color: #f59e0b;
-      border: 2px solid #fff;
-      box-shadow: 0 0 0 2px #f59e0b;
-    }
-    .dot.ready { background-color: var(--highlighter-green); box-shadow: 0 0 0 2px var(--highlighter-green); }
-    .dot.error { background-color: var(--eraser-pink); box-shadow: 0 0 0 2px var(--eraser-pink); }
-
-    .workspace {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 1.75rem;
-      margin-bottom: 3rem;
-    }
-    @media (max-width: 850px) { .workspace { grid-template-columns: 1fr; } }
-
-    .notebook-card {
-      background-color: var(--paper);
-      background-image:
-        linear-gradient(90deg, transparent 42px, var(--margin-red) 42px, var(--margin-red) 44px, transparent 44px),
-        repeating-linear-gradient(transparent, transparent 27px, var(--ruled-line) 28px);
-      border: 2px solid #cbd5e1;
-      border-radius: 14px;
-      padding: 1.75rem 1.75rem 1.75rem 3.5rem;
-      box-shadow: 4px 6px 0px rgba(139, 90, 43, 0.25);
-      position: relative;
-    }
-
-    .notebook-card::before {
-      content: "";
-      position: absolute;
-      top: 18px;
-      bottom: 18px;
-      left: 12px;
-      width: 14px;
-      background-image: radial-gradient(circle, #64748b 45%, transparent 50%);
-      background-size: 14px 28px;
-    }
-
-    .notebook-card h2 {
-      font-family: "Fredoka", sans-serif;
-      font-size: 1.35rem;
-      color: var(--chalkboard);
-      margin-bottom: 1rem;
-    }
-
-    .tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      background: #e2e8f0;
-      padding: 0.35rem;
-      border-radius: 10px;
-      margin-bottom: 1.25rem;
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--ink-muted);
-      padding: 0.6rem 1rem;
-      border-radius: 8px;
-      font-family: "Fredoka", sans-serif;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-
-    .tab-btn.active { background: var(--chalkboard); color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
-
-    .viewport {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      max-height: 360px;
-      background: #f8fafc;
-      border: 3px dashed #94a3b8;
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      margin: 0 auto 1.25rem;
-    }
-
-    .viewport canvas, .viewport img { width: 100%; height: 100%; object-fit: cover; }
-    .placeholder-text { text-align: center; color: var(--ink-muted); padding: 1.5rem; font-size: 0.98rem; }
-
-    .controls { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
-
-    .btn, .file-label {
-      background: var(--pencil-yellow);
-      color: #1e293b;
-      border: 2px solid #ca8a04;
-      padding: 0.7rem 1.35rem;
-      border-radius: 10px;
-      font-family: "Fredoka", sans-serif;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 3px 0 #ca8a04;
-      display: inline-block;
-    }
-
-    .btn:hover:not(:disabled), .file-label:hover { background: var(--pencil-hover); }
-    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-    .btn-danger { background: var(--eraser-pink); color: #fff; border-color: #be123c; box-shadow: 0 3px 0 #be123c; }
-    .btn-danger:hover:not(:disabled) { background: var(--eraser-hover); }
-    input[type="file"] { display: none; }
-
-    .top-result {
-      background: #dcfce7;
-      border: 2.5px solid #16a34a;
-      border-radius: 12px;
-      padding: 1rem;
-      margin-bottom: 1.5rem;
-      text-align: center;
-      transform: rotate(-0.75deg);
-    }
-
-    .top-result-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: #15803d; font-weight: 800; }
-    .top-result-value { font-family: "Fredoka", sans-serif; font-size: 1.65rem; font-weight: 700; margin-top: 0.15rem; color: #14532d; }
-
-    .bars-container {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      background: rgba(255, 255, 255, 0.85);
-      padding: 1rem;
-      border-radius: 10px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .bar-item { display: flex; flex-direction: column; gap: 0.3rem; }
-    .bar-header { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 700; }
-    .bar-track { width: 100%; height: 14px; background: #e2e8f0; border-radius: 999px; overflow: hidden; border: 1px solid #cbd5e1; }
-    .bar-fill { height: 100%; width: 0%; background: var(--marker-blue); border-radius: 999px; transition: width 0.2s ease, background-color 0.2s ease; }
-    .bar-fill.winner { background: var(--highlighter-green); }
-
-    .bulletin-board {
-      background: #c68b59;
-      background-image: radial-gradient(rgba(92, 58, 26, 0.18) 1.5px, transparent 1.5px);
-      background-size: 12px 12px;
-      border: 10px solid var(--wood-frame);
-      border-radius: 16px;
-      padding: 2rem;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18), inset 0 0 20px rgba(0, 0, 0, 0.15);
-    }
-
-    .bulletin-header {
-      background: var(--paper);
-      display: inline-block;
-      padding: 1rem 1.5rem;
-      border-radius: 8px;
-      box-shadow: 3px 4px 8px rgba(0, 0, 0, 0.15);
-      margin-bottom: 1.75rem;
-      border-top: 6px solid var(--eraser-pink);
-    }
-
-    .bulletin-header h2 { font-family: "Fredoka", sans-serif; font-size: 1.65rem; color: var(--chalkboard); margin-bottom: 0.35rem; }
-    .bulletin-header p { color: var(--ink-muted); font-size: 0.98rem; max-width: 720px; }
-
-    .impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.35rem; }
-
-    .sticky-note {
-      padding: 1.4rem 1.25rem 1.25rem;
-      border-radius: 4px 4px 18px 4px;
-      box-shadow: 3px 5px 10px rgba(0, 0, 0, 0.18);
-      position: relative;
-    }
-
-    .sticky-note::before {
-      content: "";
-      position: absolute;
-      top: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #ef4444;
-      box-shadow: inset -2px -2px 3px rgba(0, 0, 0, 0.3), 0 2px 3px rgba(0, 0, 0, 0.3);
-    }
-
-    .sticky-yellow { background: var(--sticky-yellow); transform: rotate(-1.2deg); }
-    .sticky-blue   { background: var(--sticky-blue);   transform: rotate(1deg); }
-    .sticky-pink   { background: var(--sticky-pink);   transform: rotate(-0.8deg); }
-    .sticky-green  { background: var(--sticky-green);  transform: rotate(1.3deg); }
-
-    .sticky-note h3 { font-family: "Fredoka", sans-serif; font-size: 1.15rem; margin-top: 0.4rem; margin-bottom: 0.45rem; color: #0f172a; }
-    .sticky-note p { font-size: 0.93rem; color: #1e293b; }
-
-    footer { text-align: center; margin-top: 2.75rem; color: var(--wood-dark); font-weight: 600; font-size: 0.92rem; }
-    footer a { color: var(--chalkboard); text-decoration: underline; }
-    .hidden { display: none !important; }
-  </style>
-</head>
-<body>
-
-  <header>
-    <span class="badge">Classroom AI Science Project</span>
-    <h1>School Supplies Identifier</h1>
-    <p>
-      Hold a school supply up to the classroom webcam or upload a picture to see how Artificial Intelligence recognizes everyday study tools!
-    </p>
-  </header>
-
-  <main class="container">
-    <div class="status-bar">
-      <div class="status-indicator">
-        <span id="status-dot" class="dot"></span>
-        <span id="status-text">Getting the classroom AI model ready...</span>
-      </div>
-      <div style="font-size: 0.88rem; color: var(--ink-muted); font-weight: 600;">
-        Model ID: <code>bqIf4W5_E</code>
-      </div>
-    </div>
-
-    <section class="workspace" aria-label="AI Model Testing Area">
-      <div class="notebook-card">
-        <h2>1. Pick How to Test</h2>
-        <div class="tabs">
-          <button id="tab-webcam" class="tab-btn active" onclick="switchMode('webcam')">Live Webcam</button>
-          <button id="tab-upload" class="tab-btn" onclick="switchMode('upload')">Upload Photo</button>
-        </div>
-
-        <div id="webcam-panel">
-          <div id="webcam-viewport" class="viewport">
-            <div class="placeholder-text" id="webcam-placeholder">
-              Press <strong>Start Webcam</strong> below and hold up a pencil, notebook, or other supply!
-            </div>
-          </div>
-          <div class="controls">
-            <button id="start-cam-btn" class="btn" onclick="startWebcam()" disabled>Start Webcam</button>
-            <button id="stop-cam-btn" class="btn btn-danger hidden" onclick="stopWebcam()">Stop Webcam</button>
-          </div>
-        </div>
-
-        <div id="upload-panel" class="hidden">
-          <div id="upload-viewport" class="viewport" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
-            <div class="placeholder-text" id="upload-placeholder">
-              Drag & drop a school supply photo here, or click <strong>Choose Photo</strong>.
-            </div>
-            <img id="preview-image" class="hidden" alt="Uploaded school supply preview" />
-          </div>
-          <div class="controls">
-            <label for="image-upload" class="file-label">Choose Photo</label>
-            <input type="file" id="image-upload" accept="image/*" onchange="handleImageUpload(event)" />
-          </div>
-        </div>
-      </div>
-
-      <div class="notebook-card">
-        <h2>2. AI Report Card</h2>
-        <div class="top-result">
-          <div class="top-result-label">Detected School Supply</div>
-          <div id="top-prediction" class="top-result-value">Waiting for item...</div>
-        </div>
-        <div id="bars-container" class="bars-container">
-          <p style="color: var(--ink-muted); font-size: 0.92rem; text-align: center;">
-            Confidence meters will appear once the model finishes loading.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class="bulletin-board" aria-labelledby="community-heading">
-      <div class="bulletin-header">
-        <h2 id="community-heading">Why This Matters to Our School & Community</h2>
-        <p>
-          Smart visual recognition helps students, teachers, and local donation drives stay organized while making STEM learning interactive and fun.
-        </p>
-      </div>
-
-      <div class="impact-grid">
-        <div class="sticky-note sticky-yellow">
-          <h3>Tidy Classrooms</h3>
-          <p>
-            Helps students quickly sort shared classroom bins, lost-and-found boxes, and art supplies into the right places at the end of the day.
-          </p>
-        </div>
-
-        <div class="sticky-note sticky-blue">
-          <h3>Supply Drive Sorting</h3>
-          <p>
-            Makes it easier for student clubs and community volunteers to inventory donated pencils, notebooks, and backpacks for local families.
-          </p>
-        </div>
-
-        <div class="sticky-note sticky-pink">
-          <h3>Hands-On STEM</h3>
-          <p>
-            Turns the classroom into an AI lab—showing students how computers learn from examples and measure confidence percentages in real time.
-          </p>
-        </div>
-
-        <div class="sticky-note sticky-green">
-          <h3>100% Student Privacy</h3>
-          <p>
-            Everything runs right inside your own web browser. Camera video and photos are never recorded, saved, or sent anywhere online.
-          </p>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    Classroom AI Project • Powered by <a href="https://teachablemachine.withgoogle.com/" target="_blank" rel="noopener">Google Teachable Machine</a>
-  </footer>
+  <!-- TensorFlow.js & Teachable Machine Image Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
 
   <script>
-    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/bqIf4W5_E/";
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            chalk: ['"Patrick Hand"', 'cursive'],
+            hand: ['"Caveat"', 'cursive'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            chalkboard: {
+              dark: '#183026',
+              base: '#213f32',
+              light: '#2b5241',
+            },
+            wood: {
+              light: '#d4a373',
+              base: '#b07d4f',
+              dark: '#7f5539',
+            },
+            paper: {
+              cream: '#fdfbf7',
+              line: '#d6e4f0',
+              margin: '#f2a29b',
+            }
+          }
+        }
+      }
+    };
+  </script>
 
+  <style>
+    /* Custom Schoolroom Textures & Micro-interactions */
+    body {
+      background-color: #f3efe6;
+      background-image: 
+        radial-gradient(#dcd4c6 1px, transparent 1px),
+        radial-gradient(#dcd4c6 1px, #f3efe6 1px);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
+      color: #1e293b;
+    }
+
+    /* Realistic Chalkboard Texture & Wooden Tray Frame */
+    .chalkboard-surface {
+      background-color: #213f32;
+      background-image: 
+        radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
+      box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.45);
+    }
+
+    .wood-frame {
+      border: 8px solid #9c6644;
+      box-shadow: 
+        0 10px 25px -5px rgba(60, 36, 21, 0.25),
+        inset 0 0 0 2px #7f5539;
+    }
+
+    .chalk-tray {
+      background: linear-gradient(180deg, #b07d4f 0%, #8c5a32 100%);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    /* Ruled Notebook Paper Styling */
+    .notebook-card {
+      background-color: #fdfbf7;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 27px,
+        #e2ecf5 28px
+      );
+      position: relative;
+      box-shadow: 0 6px 20px rgba(30, 41, 59, 0.08), 0 1px 3px rgba(30, 41, 59, 0.06);
+    }
+
+    .notebook-margin::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 2.25rem;
+      width: 2px;
+      background-color: rgba(242, 139, 130, 0.55);
+      pointer-events: none;
+    }
+
+    /* Cork Bulletin Board Texture */
+    .corkboard-bg {
+      background-color: #c99b6b;
+      background-image: 
+        radial-gradient(rgba(105, 68, 34, 0.18) 1.5px, transparent 1.5px),
+        radial-gradient(rgba(255, 238, 214, 0.25) 1px, transparent 1px);
+      background-size: 16px 16px;
+      background-position: 0 0, 8px 8px;
+      border: 10px solid #7f5539;
+      box-shadow: inset 0 0 24px rgba(66, 39, 17, 0.35), 0 12px 24px rgba(0,0,0,0.12);
+    }
+
+    /* Sticky Note Aesthetic */
+    .sticky-note {
+      box-shadow: 2px 5px 12px rgba(0, 0, 0, 0.12);
+      transition: transform 0.2s ease;
+    }
+    .sticky-note:hover {
+      transform: translateY(-2px) rotate(0deg) !important;
+    }
+
+    /* Pushpin Dot */
+    .pushpin {
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.35), inset 0 2px 3px rgba(255,255,255,0.6);
+    }
+
+    /* Mirrored Webcam Canvas */
+    .mirror-video {
+      transform: scaleX(-1);
+    }
+
+    /* Subtle Bell Ring Animation */
+    @keyframes bellRing {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(16deg); }
+      40% { transform: rotate(-14deg); }
+      60% { transform: rotate(10deg); }
+      80% { transform: rotate(-8deg); }
+    }
+    .ring-bell {
+      animation: bellRing 0.6s ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-amber-200 selection:text-slate-900">
+
+  <!-- Top Classroom Banner / Chalkboard Header -->
+  <header class="w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6">
+    <div class="chalkboard-surface wood-frame rounded-2xl overflow-hidden text-white">
+      <div class="p-4 sm:p-6 md:p-7 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        
+        <!-- Brand & School Title -->
+        <div class="flex items-start sm:items-center gap-3.5 sm:gap-4">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-400/20 border-2 border-amber-300/70 flex items-center justify-center shrink-0 shadow-inner">
+            <!-- School Bell / Microscope SVG Icon -->
+            <svg id="schoolBellIcon" class="w-7 h-7 sm:w-8 sm:h-8 text-amber-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14v7" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 rounded-full">
+                Room 101 • Edge AI Science Lab
+              </span>
+              <span id="modelStatusPill" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/40">
+                <span id="modelStatusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span id="modelStatusText">Loading Model...</span>
+              </span>
+            </div>
+            <h1 class="font-chalk text-3xl sm:text-4xl md:text-5xl tracking-wide text-white mt-1 drop-shadow">
+              Classroom Smart Vision Scanner
+            </h1>
+            <p class="text-emerald-100/85 text-xs sm:text-sm max-w-2xl mt-0.5">
+              Interactive Teachable Machine image recognition running 100% locally in your browser for student exploration and community impact.
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Controls: Teacher's Model Settings Toggle & Sound/Voice -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button id="toggleAudioBtn" type="button" onclick="toggleAudioFeedback()" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm font-semibold text-white transition cursor-pointer" title="Toggle School Bell Chime & Voice Announcement">
+            <span id="audioIcon">🔕</span>
+            <span id="audioLabel">Bell & Voice: Off</span>
+          </button>
+
+          <button id="toggleSettingsBtn" type="button" onclick="toggleTeacherSettings()" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs sm:text-sm font-bold shadow transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Model Roster & URL</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Class Roster Strip (Shows loaded labels from metadata.json) -->
+      <div class="bg-chalkboard-dark/80 border-t border-white/15 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-chalk text-base text-amber-300 tracking-wide">📋 Class Roster (<span id="classCountBadge">0</span>):</span>
+          <div id="classRosterContainer" class="flex flex-wrap items-center gap-1.5">
+            <span class="text-emerald-200/70 italic">Fetching model classes...</span>
+          </div>
+        </div>
+        <div class="font-mono text-[11px] text-emerald-200/75 truncate max-w-full">
+          Model ID: <span id="activeModelDisplay" class="text-white">bqIf4W5_E</span>
+        </div>
+      </div>
+
+      <!-- Collapsible Teacher's Settings Drawer -->
+      <div id="teacherSettingsDrawer" class="hidden bg-chalkboard-dark border-t border-dashed border-white/25 px-4 sm:px-6 py-4">
+        <div class="flex flex-col md:flex-row md:items-end gap-3">
+          <div class="flex-1">
+            <label for="customModelUrlInput" class="block font-chalk text-lg text-amber-200 mb-1">
+              Teacher's Model URL (Swap or Test Any Teachable Machine Image Link):
+            </label>
+            <input 
+              id="customModelUrlInput" 
+              type="url" 
+              value="https://teachablemachine.withgoogle.com/models/bqIf4W5_E/"
+              placeholder="https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/25 text-white placeholder-white/40 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="loadModelFromInput()" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition cursor-pointer">
+              Load Model
+            </button>
+            <button type="button" onclick="resetDefaultModel()" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition cursor-pointer">
+              Reset Default
+            </button>
+          </div>
+        </div>
+        <p id="modelErrorBox" class="hidden mt-2 text-xs text-rose-300 bg-rose-950/60 border border-rose-500/40 rounded-lg px-3 py-2"></p>
+      </div>
+
+      <!-- Wooden Chalk Tray Bottom Edge with Chalk Pieces & Eraser -->
+      <div class="chalk-tray h-3.5 px-8 flex items-center justify-end gap-3">
+        <div class="w-10 h-1.5 bg-white/90 rounded-full shadow-sm"></div>
+        <div class="w-7 h-1.5 bg-amber-200/90 rounded-full shadow-sm"></div>
+        <div class="w-14 h-2.5 bg-slate-800 border-t-2 border-slate-500 rounded-sm -mt-1 shadow"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Interactive Classroom Workspace -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 py-6 space-y-8">
+    
+    <!-- Toast / Classroom Notification Banner (Replaces alert()) -->
+    <div id="classroomToast" class="hidden fixed bottom-5 right-5 z-50 max-w-sm bg-slate-900 text-white border-2 border-amber-400 rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 transition-all">
+      <span id="toastEmoji" class="text-xl">🔔</span>
+      <p id="toastMessage" class="text-sm font-medium leading-snug"></p>
+    </div>
+
+    <!-- Two-Column Workspace: Left = Input Station (Webcam / Upload), Right = AI Report Card & Lab Notebook -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- LEFT COLUMN (7 cols on lg): Visual Input Station -->
+      <section class="lg:col-span-7 chalkboard-surface wood-frame rounded-2xl p-4 sm:p-6 text-white space-y-4">
+        
+        <!-- Mode Switcher Tabs -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
+          <div class="inline-flex p-1 rounded-xl bg-chalkboard-dark/90 border border-white/15">
+            <button id="tabWebcamBtn" type="button" onclick="switchInputMode('webcam')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-amber-400 text-slate-900 shadow transition cursor-pointer">
+              <span>📹</span>
+              <span>Live Webcam</span>
+            </button>
+            <button id="tabUploadBtn" type="button" onclick="switchInputMode('upload')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-emerald-100 hover:text-white transition cursor-pointer">
+              <span>🖼️</span>
+              <span>Image Upload Lab</span>
+            </button>
+          </div>
+
+          <!-- Live Performance / Inference Speed Pill -->
+          <div class="flex items-center gap-2 text-xs font-mono bg-chalkboard-dark/80 px-3 py-1.5 rounded-lg border border-white/10">
+            <span class="text-emerald-300">⚡ Speed:</span>
+            <span id="fpsReadout" class="text-white font-semibold">Idle</span>
+          </div>
+        </div>
+
+        <!-- MODE 1: LIVE WEBCAM VIEW -->
+        <div id="webcamPanel" class="space-y-4">
+          <div class="relative w-full aspect-[4/3] max-h-[440px] bg-chalkboard-dark rounded-xl border-2 border-dashed border-white/30 overflow-hidden flex items-center justify-center">
+            
+            <!-- Placeholder Before Camera Starts -->
+            <div id="webcamPlaceholder" class="text-center p-6 max-w-md space-y-3">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-3xl">
+                📷
+              </div>
+              <h2 class="font-chalk text-2xl sm:text-3xl text-amber-200">Ready for Live Inspection</h2>
+              <p class="text-xs sm:text-sm text-emerald-100/80">
+                Click <strong>Start Camera</strong> below to point your webcam at an object. All video stays strictly on your device.
+              </p>
+              <button id="heroStartCamBtn" type="button" onclick="startWebcam()" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm shadow-lg transition cursor-pointer">
+                <span>▶</span>
+                <span>Start Classroom Camera</span>
+              </button>
+            </div>
+
+            <!-- Webcam Canvas Container -->
+            <div id="webcamCanvasWrapper" class="hidden w-full h-full flex items-center justify-center bg-black/50"></div>
+
+            <!-- Live Overlay Badge -->
+            <div id="liveIndicatorBadge" class="hidden absolute top-3 left-3 flex items-center gap-2 px-3 py-1 rounded-full bg-rose-600/90 text-white text-xs font-bold tracking-wider shadow">
+              <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+              <span id="liveBadgeText">LIVE SCANNING</span>
+            </div>
+
+            <!-- Quick Overlay Top Prediction Pill on Video -->
+            <div id="videoOverlayPrediction" class="hidden absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-sm border border-white/20 rounded-xl px-3.5 py-2 flex items-center justify-between">
+              <span class="text-xs text-emerald-300 font-semibold uppercase">Detected:</span>
+              <span id="overlayClassName" class="font-chalk text-xl text-white truncate px-2">—</span>
+              <span id="overlayConfidence" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">0%</span>
+            </div>
+          </div>
+
+          <!-- Webcam Controls Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="startStopCamBtn" type="button" onclick="toggleWebcam()" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition cursor-pointer">
+                ▶ Start Camera
+              </button>
+              <button id="pauseCamBtn" type="button" onclick="togglePauseWebcam()" disabled class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white font-semibold text-xs sm:text-sm transition cursor-pointer">
+                ⏸ Freeze Frame
+              </button>
+              <button id="mirrorCamBtn" type="button" onclick="toggleMirrorWebcam()" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm transition cursor-pointer">
+                🪞 Mirror: On
+              </button>
+            </div>
+
+            <button id="switchFacingBtn" type="button" onclick="switchCameraFacing()" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-200 font-semibold text-xs sm:text-sm transition cursor-pointer" title="Switch between Front and Rear camera on mobile/tablets">
+              🔄 Flip Front/Back
+            </button>
+          </div>
+        </div>
+
+        <!-- MODE 2: IMAGE UPLOAD & DRAG-AND-DROP LAB -->
+        <div id="uploadPanel" class="hidden space-y-4">
+          <div 
+            id="dropZone" 
+            onclick="document.getElementById('imageFileInput').click()"
+            class="relative w-full min-h-[300px] sm:min-h-[340px] bg-chalkboard-dark/90 hover:bg-chalkboard-dark rounded-xl border-2 border-dashed border-amber-300/60 hover:border-amber-300 transition flex flex-col items-center justify-center p-6 text-center cursor-pointer"
+          >
+            <input id="imageFileInput" type="file" accept="image/*" class="hidden" onchange="handleImageFileSelect(event)" />
+            
+            <!-- Empty Drop Prompt -->
+            <div id="uploadPrompt" class="space-y-3 max-w-md">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-3xl">
+                📎
+              </div>
+              <h3 class="font-chalk text-2xl sm:text-3xl text-amber-200">Drop a Sample Photo Here</h3>
+              <p class="text-xs sm:text-sm text-emerald-100/80">
+                Drag and drop an image file (JPG, PNG, WebP) onto the chalkboard, or click anywhere in this box to browse your device.
+              </p>
+              <span class="inline-block px-4 py-2 rounded-xl bg-amber-400 text-slate-900 font-bold text-xs sm:text-sm shadow">
+                Choose Image File
+              </span>
+            </div>
+
+            <!-- Uploaded Image Preview (Polaroid Classroom Card) -->
+            <div id="uploadedPreviewWrapper" class="hidden w-full flex flex-col items-center">
+              <div class="bg-white p-3 pb-5 rounded-lg shadow-xl max-w-xs sm:max-w-sm transform -rotate-1">
+                <img id="uploadedPreviewImg" alt="Uploaded test sample" class="max-h-64 w-auto mx-auto rounded object-contain bg-slate-100" />
+                <p id="uploadedFileName" class="font-hand text-xl text-slate-700 text-center mt-2 truncate">sample-photo.jpg</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <button type="button" onclick="document.getElementById('imageFileInput').click()" class="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold text-xs sm:text-sm transition cursor-pointer">
+              📂 Select Another Photo
+            </button>
+            <button id="clearUploadBtn" type="button" onclick="clearUploadedImage(event)" disabled class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white font-semibold text-xs sm:text-sm transition cursor-pointer">
+              🧹 Clear Photo
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN (5 cols on lg): AI Report Card & Classroom Lab Notebook -->
+      <section class="lg:col-span-5 space-y-6">
+        
+        <!-- AI REPORT CARD (Lined Notebook Paper Card) -->
+        <div class="notebook-card notebook-margin rounded-2xl border border-slate-300/90 p-5 sm:p-6 pl-12 sm:pl-14">
+          <div class="flex items-center justify-between gap-2 border-b-2 border-slate-800/15 pb-3">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-rose-600">Official Evaluation</span>
+              <h2 class="font-chalk text-2xl sm:text-3xl text-slate-900 leading-none mt-0.5">AI Student Report Card</h2>
+            </div>
+            <!-- Grade Stamp -->
+            <div id="gradeStamp" class="px-3 py-1 rounded-lg border-2 border-slate-400 text-slate-500 font-chalk text-xl font-bold transform rotate-3">
+              READY
+            </div>
+          </div>
+
+          <!-- Top Prediction Highlight Box -->
+          <div id="topResultCard" class="mt-4 p-4 rounded-xl bg-amber-50/95 border-2 border-amber-300/80 shadow-sm transition-all">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span>Primary Classification</span>
+              <span id="confidenceStatusTag" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Waiting for Input</span>
+            </div>
+            <div class="mt-1.5 flex items-baseline justify-between gap-2">
+              <p id="topClassLabel" class="font-chalk text-3xl sm:text-4xl text-slate-900 truncate">No Sample Yet</p>
+              <p id="topClassPercent" class="font-mono text-2xl font-bold text-emerald-700">0.0%</p>
+            </div>
+            <p id="feedbackHelperText" class="text-xs text-slate-600 mt-1.5">
+              Start the webcam or upload a photo to view real-time class probabilities.
+            </p>
+          </div>
+
+          <!-- Confidence Threshold Slider -->
+          <div class="mt-4 bg-white/80 rounded-xl p-3 border border-slate-200">
+            <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+              <span>🎯 Passing Confidence Threshold</span>
+              <span id="thresholdValueLabel" class="font-mono text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">75%</span>
+            </div>
+            <input 
+              id="confidenceThresholdSlider" 
+              type="range" 
+              min="50" 
+              max="95" 
+              step="5" 
+              value="75" 
+              oninput="updateThresholdLabel(this.value)"
+              class="w-full accent-emerald-700 cursor-pointer"
+            />
+            <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+              <span>50% (Lenient)</span>
+              <span>75% (Standard)</span>
+              <span>95% (Strict)</span>
+            </div>
+          </div>
+
+          <!-- All Class Probability Bars -->
+          <div class="mt-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600">Class Confidence Breakdown</h3>
+              <span class="text-[11px] text-slate-400">Sorted High → Low</span>
+            </div>
+            <div id="probabilityBarsContainer" class="space-y-2.5">
+              <!-- Populated dynamically once model loads -->
+              <div class="text-xs text-slate-500 italic py-2">Loading class meters...</div>
+            </div>
+          </div>
+
+          <!-- Action Button: Record Observation to Notebook -->
+          <div class="mt-5 pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+            <button id="recordLogBtn" type="button" onclick="recordCurrentObservation()" disabled class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-chalkboard-base hover:bg-chalkboard-light disabled:opacity-45 text-white font-bold text-xs sm:text-sm shadow transition cursor-pointer">
+              <span>✍️</span>
+              <span>Record to Lab Notebook</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- CLASSROOM OBSERVATION LOG ("LAB NOTEBOOK" WITH CSV EXPORT) -->
+        <div class="notebook-card rounded-2xl border border-slate-300/90 p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+            <div>
+              <h3 class="font-chalk text-2xl text-slate-900">📓 Student Lab Notebook</h3>
+              <p class="text-xs text-slate-500">Save findings & export CSV data for science projects</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button id="exportCsvBtn" type="button" onclick="exportLogToCSV()" disabled class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white text-xs font-bold transition cursor-pointer">
+                ⬇ Export CSV
+              </button>
+              <button id="clearLogBtn" type="button" onclick="clearObservationLog()" disabled class="px-2.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 disabled:opacity-40 text-slate-700 text-xs font-semibold transition cursor-pointer">
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div id="observationLogList" class="mt-3 max-h-48 overflow-y-auto space-y-2 pr-1">
+            <p id="emptyLogMessage" class="text-xs text-slate-500 italic py-4 text-center">
+              No observations recorded yet. Scan an object and click "Record to Lab Notebook".
+            </p>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- DEDICATED COMMUNITY SIGNIFICANCE & EDUCATIONAL SECTION ("SCHOOL BULLETIN BOARD") -->
+    <section aria-labelledby="bulletinHeading" class="corkboard-bg rounded-2xl p-5 sm:p-8">
+      
+      <!-- Bulletin Board Header Banner -->
+      <div class="max-w-3xl mx-auto text-center mb-7">
+        <div class="inline-block bg-paper-cream px-6 py-3 rounded-xl shadow-md border border-amber-200 transform -rotate-1">
+          <span class="text-xs font-extrabold uppercase tracking-widest text-emerald-800">Community & Classroom Showcase</span>
+          <h2 id="bulletinHeading" class="font-chalk text-3xl sm:text-4xl text-slate-900 mt-0.5">
+            Why This AI Matters to Our Community
+          </h2>
+        </div>
+      </div>
+
+      <!-- Pinned Sticky Notes & Index Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Card 1: Real-World Community Impact -->
+        <article class="sticky-note bg-amber-100 rounded-xl p-5 pt-7 relative border border-amber-300/80 transform -rotate-1">
+          <div class="pushpin bg-rose-600 absolute top-3 left-1/2 -translate-x-1/2"></div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-2xl">🌍</span>
+            <h3 class="font-chalk text-2xl text-slate-900">Community Empowerment</h3>
+          </div>
+          <p class="text-sm text-slate-800 leading-relaxed">
+            Accessible computer vision turns everyday school laptops and phones into smart diagnostic tools—helping local classrooms, barangays, and youth clubs tackle real-world sorting, agricultural checks, safety awareness, and assistive identification without costly specialized hardware.
+          </p>
+          <ul class="mt-3 space-y-1.5 text-xs font-semibold text-slate-700">
+            <li class="flex items-center gap-1.5"><span>✅</span> Zero-cost deployment via GitHub Pages</li>
+            <li class="flex items-center gap-1.5"><span>✅</span> Works on standard classroom webcams</li>
+            <li class="flex items-center gap-1.5"><span>✅</span> Exportable data for student research</li>
+          </ul>
+        </article>
+
+        <!-- Card 2: Privacy-First Edge AI -->
+        <article class="sticky-note bg-sky-100 rounded-xl p-5 pt-7 relative border border-sky-300/80 transform rotate-1">
+          <div class="pushpin bg-amber-500 absolute top-3 left-1/2 -translate-x-1/2"></div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-2xl">🛡️</span>
+            <h3 class="font-chalk text-2xl text-slate-900">Student Privacy First</h3>
+          </div>
+          <p class="text-sm text-slate-800 leading-relaxed">
+            Unlike cloud AI apps that send student photos to remote servers, this scanner runs <strong>100% locally in your web browser</strong> using TensorFlow.js. Every webcam frame and uploaded image stays strictly inside your device's memory and disappears when you close the tab.
+          </p>
+          <div class="mt-3 p-2.5 rounded-lg bg-white/75 border border-sky-200 text-xs text-slate-700">
+            <strong>Classroom Safe:</strong> Ideal for K–12 schools, science fairs, and public workshops where student data privacy is top priority.
+          </div>
+        </article>
+
+        <!-- Card 3: How It Works (3-Step Student Lesson) -->
+        <article class="sticky-note bg-emerald-100 rounded-xl p-5 pt-7 relative border border-emerald-300/80 transform -rotate-1">
+          <div class="pushpin bg-blue-600 absolute top-3 left-1/2 -translate-x-1/2"></div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-2xl">🧠</span>
+            <h3 class="font-chalk text-2xl text-slate-900">How the AI Learns</h3>
+          </div>
+          <ol class="space-y-2.5 text-sm text-slate-800">
+            <li class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+              <span><strong>Sample Gathering:</strong> Students capture labeled examples across distinct categories in Teachable Machine.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+              <span><strong>Transfer Learning:</strong> A lightweight MobileNet neural network learns visual patterns, shapes, and textures.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+              <span><strong>Instant Inference:</strong> Your browser computes probability scores in milliseconds with real-time visual feedback.</span>
+            </li>
+          </ol>
+        </article>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Classroom Footer -->
+  <footer class="w-full max-w-7xl mx-auto px-3 sm:px-6 pb-8 pt-2 text-center text-xs text-slate-600">
+    <div class="bg-white/75 backdrop-blur-sm border border-slate-300/80 rounded-2xl px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p class="font-medium">
+        🏫 <strong>Campus AI Lab</strong> — Powered by TensorFlow.js & Google Teachable Machine
+      </p>
+      <p class="text-slate-500">
+        Single-file static app • Ready for GitHub Pages (<code class="bg-slate-200/80 px-1.5 py-0.5 rounded text-slate-800">index.html</code>)
+      </p>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    /**
+     * Campus AI Lab — Teachable Machine Classroom Scanner
+     * Self-contained logic for model loading, live webcam inference,
+     * image upload testing, audio/TTS feedback, and CSV lab notebook logging.
+     */
+
+    const DEFAULT_MODEL_URL = "https://teachablemachine.withgoogle.com/models/bqIf4W5_E/";
+    let currentModelUrl = DEFAULT_MODEL_URL;
     let model = null;
-    let webcam = null;
     let maxPredictions = 0;
+    let classLabels = [];
+
+    // Input mode & Webcam states
+    let activeMode = "webcam"; // 'webcam' | 'upload'
+    let webcam = null;
     let isWebcamRunning = false;
+    let isWebcamPaused = false;
+    let isWebcamMirrored = true;
+    let useFrontCamera = true;
     let animationFrameId = null;
-    let currentMode = "webcam";
 
-    const statusDot = document.getElementById("status-dot");
-    const statusText = document.getElementById("status-text");
-    const startCamBtn = document.getElementById("start-cam-btn");
-    const stopCamBtn = document.getElementById("stop-cam-btn");
-    const barsContainer = document.getElementById("bars-container");
-    const topPredictionEl = document.getElementById("top-prediction");
+    // Performance & Prediction states
+    let lastFrameTime = performance.now();
+    let confidenceThreshold = 0.75; // 75% default
+    let latestPredictions = [];
+    let observationLog = [];
 
-    async function loadModel() {
+    // Audio & Voice feedback states
+    let audioFeedbackEnabled = false;
+    let lastAnnouncedClass = "";
+    let lastAnnouncedTimestamp = 0;
+
+    // Initialize model automatically when window loads
+    window.addEventListener("load", () => {
+      setupDragAndDrop();
+      initModel(DEFAULT_MODEL_URL);
+    });
+
+    /**
+     * Normalize Teachable Machine URL so it always ends with a trailing slash
+     */
+    function normalizeModelUrl(url) {
+      let clean = (url || "").trim();
+      if (!clean) return DEFAULT_MODEL_URL;
+      if (!clean.endsWith("/")) clean += "/";
+      return clean;
+    }
+
+    /**
+     * Load Teachable Machine model.json and metadata.json
+     */
+    async function initModel(rawUrl) {
+      const normalizedUrl = normalizeModelUrl(rawUrl);
+      const modelURL = normalizedUrl + "model.json";
+      const metadataURL = normalizedUrl + "metadata.json";
+
+      const errorBox = document.getElementById("modelErrorBox");
+      errorBox.classList.add("hidden");
+      setModelStatus("loading", "Loading Model...");
+
       try {
-        const modelURL = MODEL_URL + "model.json";
-        const metadataURL = MODEL_URL + "metadata.json";
-
         model = await tmImage.load(modelURL, metadataURL);
+        currentModelUrl = normalizedUrl;
         maxPredictions = model.getTotalClasses();
+        classLabels = model.getClassLabels();
 
-        const classLabels = model.getClassLabels();
-        barsContainer.innerHTML = "";
-        classLabels.forEach((label, index) => {
-          const item = document.createElement("div");
-          item.className = "bar-item";
-          item.innerHTML = `
-            <div class="bar-header">
-              <span id="label-${index}">${label}</span>
-              <span id="percent-${index}">0%</span>
-            </div>
-            <div class="bar-track">
-              <div id="fill-${index}" class="bar-fill"></div>
-            </div>
-          `;
-          barsContainer.appendChild(item);
-        });
+        // Update UI Class Roster & Metadata
+        document.getElementById("classCountBadge").textContent = maxPredictions;
+        const idMatch = normalizedUrl.match(/models\/([^/]+)/);
+        document.getElementById("activeModelDisplay").textContent = idMatch ? idMatch[1] : "Custom Model";
 
-        statusDot.classList.add("ready");
-        statusText.textContent = `Class is in session! (${maxPredictions} supply categories loaded)`;
-        startCamBtn.disabled = false;
+        renderClassRosterBadges(classLabels);
+        renderInitialProbabilityBars(classLabels);
+        setModelStatus("ready", "Model Ready");
+        showToast("📚", `Model loaded with ${maxPredictions} classes!`);
+
+        // Re-run prediction if an image is already uploaded
+        const uploadedImg = document.getElementById("uploadedPreviewImg");
+        if (activeMode === "upload" && uploadedImg && uploadedImg.src && !document.getElementById("uploadedPreviewWrapper").classList.contains("hidden")) {
+          await predictElement(uploadedImg, "Uploaded Image");
+        }
       } catch (err) {
-        console.error("Failed to load model:", err);
-        statusDot.classList.add("error");
-        statusText.textContent = "Could not load the model. Check your internet connection.";
+        console.error("Failed to load Teachable Machine model:", err);
+        setModelStatus("error", "Load Failed");
+        errorBox.textContent = "Could not load model. Verify the Teachable Machine link is public and exported as an Image model.";
+        errorBox.classList.remove("hidden");
+        showToast("⚠️", "Error loading model. Check URL in Model Roster.");
       }
     }
 
-    function switchMode(mode) {
-      if (currentMode === mode) return;
-      currentMode = mode;
+    function setModelStatus(state, label) {
+      const pill = document.getElementById("modelStatusPill");
+      const dot = document.getElementById("modelStatusDot");
+      const text = document.getElementById("modelStatusText");
+      text.textContent = label;
 
-      document.getElementById("tab-webcam").classList.toggle("active", mode === "webcam");
-      document.getElementById("tab-upload").classList.toggle("active", mode === "upload");
+      pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full border ";
+      dot.className = "w-2 h-2 rounded-full ";
 
-      document.getElementById("webcam-panel").classList.toggle("hidden", mode !== "webcam");
-      document.getElementById("upload-panel").classList.toggle("hidden", mode !== "upload");
-
-      if (mode === "upload" && isWebcamRunning) {
-        stopWebcam();
+      if (state === "ready") {
+        pill.className += "bg-emerald-500/20 text-emerald-200 border-emerald-400/40";
+        dot.className += "bg-emerald-400";
+      } else if (state === "error") {
+        pill.className += "bg-rose-500/25 text-rose-200 border-rose-400/40";
+        dot.className += "bg-rose-400";
+      } else {
+        pill.className += "bg-amber-500/20 text-amber-200 border-amber-400/40";
+        dot.className += "bg-amber-400 animate-pulse";
       }
-      resetBars();
+    }
+
+    function renderClassRosterBadges(labels) {
+      const container = document.getElementById("classRosterContainer");
+      container.innerHTML = "";
+      labels.forEach((label, index) => {
+        const badge = document.createElement("span");
+        badge.className = "px-2.5 py-0.5 rounded-md bg-white/10 border border-white/20 text-white font-medium text-xs";
+        badge.textContent = `#${index + 1} ${label}`;
+        container.appendChild(badge);
+      });
+    }
+
+    function renderInitialProbabilityBars(labels) {
+      const container = document.getElementById("probabilityBarsContainer");
+      container.innerHTML = "";
+      labels.forEach((label, idx) => {
+        const row = document.createElement("div");
+        row.className = "space-y-1";
+        row.innerHTML = `
+          <div class="flex justify-between text-xs font-semibold text-slate-700">
+            <span class="truncate pr-2">${escapeHtml(label)}</span>
+            <span id="prob-val-${idx}" class="font-mono text-slate-500">0.0%</span>
+          </div>
+          <div class="w-full h-3 bg-slate-200/90 rounded-full overflow-hidden border border-slate-300/70">
+            <div id="prob-bar-${idx}" class="h-full bg-slate-400 rounded-full transition-all duration-150" style="width: 0%"></div>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    /**
+     * Teacher Settings Drawer Actions
+     */
+    function toggleTeacherSettings() {
+      const drawer = document.getElementById("teacherSettingsDrawer");
+      drawer.classList.toggle("hidden");
+    }
+
+    function loadModelFromInput() {
+      const inputVal = document.getElementById("customModelUrlInput").value;
+      initModel(inputVal);
+    }
+
+    function resetDefaultModel() {
+      document.getElementById("customModelUrlInput").value = DEFAULT_MODEL_URL;
+      initModel(DEFAULT_MODEL_URL);
+    }
+
+    /**
+     * Switch between Live Webcam and Image Upload Lab
+     */
+    function switchInputMode(mode) {
+      activeMode = mode;
+      const webcamPanel = document.getElementById("webcamPanel");
+      const uploadPanel = document.getElementById("uploadPanel");
+      const tabWebcamBtn = document.getElementById("tabWebcamBtn");
+      const tabUploadBtn = document.getElementById("tabUploadBtn");
+
+      if (mode === "webcam") {
+        webcamPanel.classList.remove("hidden");
+        uploadPanel.classList.add("hidden");
+        tabWebcamBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-amber-400 text-slate-900 shadow transition cursor-pointer";
+        tabUploadBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-emerald-100 hover:text-white transition cursor-pointer";
+      } else {
+        // Pause or stop live loop while inspecting uploaded photos
+        if (isWebcamRunning) {
+          stopWebcam();
+        }
+        webcamPanel.classList.add("hidden");
+        uploadPanel.classList.remove("hidden");
+        tabUploadBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-amber-400 text-slate-900 shadow transition cursor-pointer";
+        tabWebcamBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-emerald-100 hover:text-white transition cursor-pointer";
+        document.getElementById("fpsReadout").textContent = "Photo Mode";
+      }
+    }
+
+    /**
+     * Live Webcam Functions
+     */
+    async function toggleWebcam() {
+      if (isWebcamRunning) {
+        stopWebcam();
+      } else {
+        await startWebcam();
+      }
     }
 
     async function startWebcam() {
-      if (!model || isWebcamRunning) return;
+      if (!model) {
+        showToast("⏳", "Please wait for the model to finish loading first.");
+        return;
+      }
+
+      const startBtn = document.getElementById("startStopCamBtn");
+      startBtn.disabled = true;
+      startBtn.textContent = "⏳ Connecting...";
 
       try {
-        startCamBtn.disabled = true;
-        startCamBtn.textContent = "Opening camera...";
+        // Clean up any existing instance
+        if (webcam) {
+          try { await webcam.stop(); } catch (e) {}
+        }
 
-        const flip = true;
-        webcam = new tmImage.Webcam(360, 360, flip);
-        await webcam.setup();
+        // tmImage.Webcam(width, height, flip) — we handle mirroring via CSS so flip=false keeps raw orientation clean
+        webcam = new tmImage.Webcam(480, 360, false);
+        await webcam.setup({ facingMode: useFrontCamera ? "user" : "environment" });
         await webcam.play();
 
-        const viewport = document.getElementById("webcam-viewport");
-        document.getElementById("webcam-placeholder").classList.add("hidden");
-        viewport.appendChild(webcam.canvas);
-
         isWebcamRunning = true;
-        startCamBtn.classList.add("hidden");
-        startCamBtn.disabled = false;
-        startCamBtn.textContent = "Start Webcam";
-        stopCamBtn.classList.remove("hidden");
+        isWebcamPaused = false;
 
+        // Attach canvas to DOM
+        const wrapper = document.getElementById("webcamCanvasWrapper");
+        wrapper.innerHTML = "";
+        webcam.canvas.className = "w-full h-full object-contain " + (isWebcamMirrored ? "mirror-video" : "");
+        wrapper.appendChild(webcam.canvas);
+
+        document.getElementById("webcamPlaceholder").classList.add("hidden");
+        wrapper.classList.remove("hidden");
+        document.getElementById("liveIndicatorBadge").classList.remove("hidden");
+        document.getElementById("videoOverlayPrediction").classList.remove("hidden");
+
+        startBtn.disabled = false;
+        startBtn.textContent = "⏹ Stop Camera";
+        startBtn.className = "px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm transition cursor-pointer";
+
+        const pauseBtn = document.getElementById("pauseCamBtn");
+        pauseBtn.disabled = false;
+        pauseBtn.textContent = "⏸ Freeze Frame";
+
+        lastFrameTime = performance.now();
         animationFrameId = window.requestAnimationFrame(webcamLoop);
       } catch (err) {
-        console.error("Webcam error:", err);
-        alert("Could not access the webcam. Please allow camera permissions in your browser.");
-        startCamBtn.disabled = false;
-        startCamBtn.textContent = "Start Webcam";
+        console.error("Webcam access denied or unavailable:", err);
+        startBtn.disabled = false;
+        startBtn.textContent = "▶ Start Camera";
+        showToast("🚫", "Camera permission denied or no webcam detected. Try Image Upload Lab!");
       }
     }
 
-    function stopWebcam() {
+    async function stopWebcam() {
       isWebcamRunning = false;
+      isWebcamPaused = false;
       if (animationFrameId) {
-        window.cancelAnimationFrame(animationFrameId);
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
       }
       if (webcam) {
-        webcam.stop();
-        if (webcam.canvas && webcam.canvas.parentNode) {
-          webcam.canvas.parentNode.removeChild(webcam.canvas);
-        }
+        try { await webcam.stop(); } catch (e) {}
         webcam = null;
       }
-      document.getElementById("webcam-placeholder").classList.remove("hidden");
-      stopCamBtn.classList.add("hidden");
-      startCamBtn.classList.remove("hidden");
-      resetBars();
+
+      document.getElementById("webcamCanvasWrapper").classList.add("hidden");
+      document.getElementById("webcamPlaceholder").classList.remove("hidden");
+      document.getElementById("liveIndicatorBadge").classList.add("hidden");
+      document.getElementById("videoOverlayPrediction").classList.add("hidden");
+      document.getElementById("fpsReadout").textContent = "Idle";
+
+      const startBtn = document.getElementById("startStopCamBtn");
+      startBtn.textContent = "▶ Start Camera";
+      startBtn.className = "px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition cursor-pointer";
+
+      const pauseBtn = document.getElementById("pauseCamBtn");
+      pauseBtn.disabled = true;
+      pauseBtn.textContent = "⏸ Freeze Frame";
+    }
+
+    function togglePauseWebcam() {
+      if (!isWebcamRunning) return;
+      isWebcamPaused = !isWebcamPaused;
+      const pauseBtn = document.getElementById("pauseCamBtn");
+      const badgeText = document.getElementById("liveBadgeText");
+
+      if (isWebcamPaused) {
+        pauseBtn.textContent = "▶ Resume Live";
+        badgeText.textContent = "FRAME FROZEN";
+        document.getElementById("fpsReadout").textContent = "Paused";
+      } else {
+        pauseBtn.textContent = "⏸ Freeze Frame";
+        badgeText.textContent = "LIVE SCANNING";
+        lastFrameTime = performance.now();
+        animationFrameId = window.requestAnimationFrame(webcamLoop);
+      }
+    }
+
+    function toggleMirrorWebcam() {
+      isWebcamMirrored = !isWebcamMirrored;
+      document.getElementById("mirrorCamBtn").textContent = `🪞 Mirror: ${isWebcamMirrored ? "On" : "Off"}`;
+      if (webcam && webcam.canvas) {
+        webcam.canvas.classList.toggle("mirror-video", isWebcamMirrored);
+      }
+    }
+
+    async function switchCameraFacing() {
+      useFrontCamera = !useFrontCamera;
+      showToast("🔄", `Switched preference to ${useFrontCamera ? "Front" : "Back"} camera.`);
+      if (isWebcamRunning) {
+        await startWebcam();
+      }
     }
 
     async function webcamLoop() {
-      if (!isWebcamRunning) return;
+      if (!isWebcamRunning || isWebcamPaused) return;
+
       webcam.update();
-      await predict(webcam.canvas);
+      await predictElement(webcam.canvas, "Live Webcam");
+
+      // Calculate FPS
+      const now = performance.now();
+      const delta = now - lastFrameTime;
+      lastFrameTime = now;
+      const fps = Math.max(1, Math.round(1000 / delta));
+      document.getElementById("fpsReadout").textContent = `${fps} FPS`;
+
       animationFrameId = window.requestAnimationFrame(webcamLoop);
     }
 
-    function handleDragOver(event) { event.preventDefault(); }
+    /**
+     * Image Upload & Drag-and-Drop Lab
+     */
+    function setupDragAndDrop() {
+      const dropZone = document.getElementById("dropZone");
 
-    function handleDrop(event) {
-      event.preventDefault();
-      const file = event.dataTransfer.files[0];
-      if (file && file.type.startsWith("image/")) {
-        processImageFile(file);
+      ["dragenter", "dragover"].forEach(evtName => {
+        dropZone.addEventListener(evtName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add("border-amber-300", "bg-chalkboard-light/50");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(evtName => {
+        dropZone.addEventListener(evtName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove("border-amber-300", "bg-chalkboard-light/50");
+        });
+      });
+
+      dropZone.addEventListener("drop", (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          processUploadedFile(files[0]);
+        }
+      });
+    }
+
+    function handleImageFileSelect(event) {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        processUploadedFile(files[0]);
       }
     }
 
-    function handleImageUpload(event) {
-      const file = event.target.files[0];
-      if (file) {
-        processImageFile(file);
+    function processUploadedFile(file) {
+      if (!file.type.startsWith("image/")) {
+        showToast("⚠️", "Please choose a valid image file (JPG, PNG, WebP).");
+        return;
       }
-    }
 
-    function processImageFile(file) {
-      if (!model) return;
       const reader = new FileReader();
-      reader.onload = function (e) {
-        const img = document.getElementById("preview-image");
-        img.src = e.target.result;
-        img.classList.remove("hidden");
-        document.getElementById("upload-placeholder").classList.add("hidden");
+      reader.onload = (e) => {
+        const imgEl = document.getElementById("uploadedPreviewImg");
+        imgEl.onload = async () => {
+          document.getElementById("uploadPrompt").classList.add("hidden");
+          document.getElementById("uploadedPreviewWrapper").classList.remove("hidden");
+          document.getElementById("uploadedFileName").textContent = file.name;
+          document.getElementById("clearUploadBtn").disabled = false;
 
-        img.onload = async function () {
-          await predict(img);
+          if (model) {
+            const t0 = performance.now();
+            await predictElement(imgEl, `Upload (${file.name})`);
+            const ms = Math.round(performance.now() - t0);
+            document.getElementById("fpsReadout").textContent = `${ms} ms`;
+          }
         };
+        imgEl.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
 
-    async function predict(inputElement) {
-      const predictions = await model.predict(inputElement);
-
-      let highestProb = -1;
-      let bestClass = "";
-
-      predictions.forEach((pred, i) => {
-        const percentage = Math.round(pred.probability * 100);
-        const fillEl = document.getElementById(`fill-${i}`);
-        const percentEl = document.getElementById(`percent-${i}`);
-
-        if (fillEl && percentEl) {
-          fillEl.style.width = `${percentage}%`;
-          percentEl.textContent = `${percentage}%`;
-          fillEl.classList.remove("winner");
-        }
-
-        if (pred.probability > highestProb) {
-          highestProb = pred.probability;
-          bestClass = pred.className;
-        }
-      });
-
-      predictions.forEach((pred, i) => {
-        if (pred.className === bestClass && highestProb > 0.1) {
-          const fillEl = document.getElementById(`fill-${i}`);
-          if (fillEl) fillEl.classList.add("winner");
-        }
-      });
-
-      topPredictionEl.textContent = `${bestClass} (${Math.round(highestProb * 100)}%)`;
+    function clearUploadedImage(event) {
+      if (event) event.stopPropagation();
+      document.getElementById("imageFileInput").value = "";
+      document.getElementById("uploadedPreviewImg").src = "";
+      document.getElementById("uploadedPreviewWrapper").classList.add("hidden");
+      document.getElementById("uploadPrompt").classList.remove("hidden");
+      document.getElementById("clearUploadBtn").disabled = true;
+      document.getElementById("fpsReadout").textContent = "Photo Mode";
     }
 
-    function resetBars() {
-      topPredictionEl.textContent = "Waiting for item...";
-      for (let i = 0; i < maxPredictions; i++) {
-        const fillEl = document.getElementById(`fill-${i}`);
-        const percentEl = document.getElementById(`percent-${i}`);
-        if (fillEl && percentEl) {
-          fillEl.style.width = "0%";
-          percentEl.textContent = "0%";
-          fillEl.classList.remove("winner");
+    /**
+     * Core Prediction & Visual Report Card Renderer
+     */
+    async function predictElement(imageOrCanvas, sourceName) {
+      if (!model) return;
+
+      const predictions = await model.predict(imageOrCanvas);
+      // Sort descending by probability for clear visual hierarchy
+      const sorted = [...predictions].sort((a, b) => b.probability - a.probability);
+      latestPredictions = sorted.map(p => ({ ...p, source: sourceName }));
+
+      const top = sorted[0];
+      const topPct = (top.probability * 100).toFixed(1);
+      const passedThreshold = top.probability >= confidenceThreshold;
+
+      // Update Video Overlay Pill
+      document.getElementById("overlayClassName").textContent = top.className;
+      document.getElementById("overlayConfidence").textContent = `${topPct}%`;
+
+      // Update AI Report Card Top Highlight
+      document.getElementById("topClassLabel").textContent = top.className;
+      document.getElementById("topClassPercent").textContent = `${topPct}%`;
+      document.getElementById("recordLogBtn").disabled = false;
+
+      const topCard = document.getElementById("topResultCard");
+      const statusTag = document.getElementById("confidenceStatusTag");
+      const gradeStamp = document.getElementById("gradeStamp");
+      const helperText = document.getElementById("feedbackHelperText");
+
+      if (passedThreshold) {
+        topCard.className = "mt-4 p-4 rounded-xl bg-emerald-50 border-2 border-emerald-500 shadow-sm transition-all";
+        statusTag.className = "px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold";
+        statusTag.textContent = "High Confidence Match";
+        gradeStamp.className = "px-3 py-1 rounded-lg border-2 border-emerald-600 text-emerald-700 font-chalk text-xl font-bold transform rotate-3";
+        gradeStamp.textContent = top.probability >= 0.9 ? "GRADE A+" : "PASS ✓";
+        helperText.textContent = `Clear visual match for "${top.className}" above your ${Math.round(confidenceThreshold * 100)}% threshold.`;
+
+        triggerAudioAndVoiceIfEnabled(top.className);
+      } else {
+        topCard.className = "mt-4 p-4 rounded-xl bg-amber-50/95 border-2 border-amber-400 shadow-sm transition-all";
+        statusTag.className = "px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-bold";
+        statusTag.textContent = "Uncertain / Below Threshold";
+        gradeStamp.className = "px-3 py-1 rounded-lg border-2 border-amber-500 text-amber-700 font-chalk text-xl font-bold transform -rotate-2";
+        gradeStamp.textContent = "REVIEW ?";
+        helperText.textContent = `Confidence (${topPct}%) is below your ${Math.round(confidenceThreshold * 100)}% threshold. Try better lighting or centering the object.`;
+      }
+
+      // Update Sorted Confidence Bars
+      const barsContainer = document.getElementById("probabilityBarsContainer");
+      barsContainer.innerHTML = "";
+      sorted.forEach((item, index) => {
+        const pct = (item.probability * 100).toFixed(1);
+        const isTop = index === 0;
+        const barColor = isTop
+          ? (passedThreshold ? "bg-emerald-600" : "bg-amber-500")
+          : "bg-slate-400";
+
+        const row = document.createElement("div");
+        row.className = "space-y-1";
+        row.innerHTML = `
+          <div class="flex justify-between text-xs ${isTop ? "font-extrabold text-slate-900" : "font-medium text-slate-600"}">
+            <span class="truncate pr-2">${isTop ? "★ " : ""}${escapeHtml(item.className)}</span>
+            <span class="font-mono">${pct}%</span>
+          </div>
+          <div class="w-full h-3 bg-slate-200/90 rounded-full overflow-hidden border border-slate-300/70">
+            <div class="h-full ${barColor} rounded-full transition-all duration-150" style="width: ${pct}%"></div>
+          </div>
+        `;
+        barsContainer.appendChild(row);
+      });
+    }
+
+    function updateThresholdLabel(val) {
+      confidenceThreshold = Number(val) / 100;
+      document.getElementById("thresholdValueLabel").textContent = `${val}%`;
+    }
+
+    /**
+     * Classroom Bell Chime (Web Audio API — zero external sound files) & Speech Synthesis
+     */
+    function toggleAudioFeedback() {
+      audioFeedbackEnabled = !audioFeedbackEnabled;
+      const icon = document.getElementById("audioIcon");
+      const label = document.getElementById("audioLabel");
+
+      if (audioFeedbackEnabled) {
+        icon.textContent = "🔔";
+        label.textContent = "Bell & Voice: On";
+        playSchoolBellChime();
+        showToast("🔔", "School bell chime & spoken readout enabled!");
+      } else {
+        icon.textContent = "🔕";
+        label.textContent = "Bell & Voice: Off";
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
         }
       }
     }
 
-    window.addEventListener("DOMContentLoaded", loadModel);
+    function playSchoolBellChime() {
+      try {
+        const bellSvg = document.getElementById("schoolBellIcon");
+        bellSvg.classList.remove("ring-bell");
+        void bellSvg.offsetWidth; // trigger reflow
+        bellSvg.classList.add("ring-bell");
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 chime
+        osc.frequency.exponentialRampToValueAtTime(1318.5, ctx.currentTime + 0.12); // E6 harmonic
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.55);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.55);
+      } catch (e) {
+        // Ignore if browser blocks audio context prior to gesture
+      }
+    }
+
+    function triggerAudioAndVoiceIfEnabled(className) {
+      if (!audioFeedbackEnabled) return;
+      const now = Date.now();
+      // Announce when a new class locks in or every 4.5 seconds
+      if (className !== lastAnnouncedClass || now - lastAnnouncedTimestamp > 4500) {
+        lastAnnouncedClass = className;
+        lastAnnouncedTimestamp = now;
+        playSchoolBellChime();
+
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(className);
+          utterance.rate = 1.05;
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    }
+
+    /**
+     * Classroom Observation Log ("Lab Notebook") & CSV Export
+     */
+    function recordCurrentObservation() {
+      if (!latestPredictions || latestPredictions.length === 0) return;
+      const top = latestPredictions[0];
+      const entry = {
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        isoDate: new Date().toISOString(),
+        source: top.source || "Scanner",
+        detectedClass: top.className,
+        confidence: (top.probability * 100).toFixed(1) + "%"
+      };
+
+      observationLog.unshift(entry);
+      renderObservationLog();
+      showToast("✍️", `Logged "${entry.detectedClass}" (${entry.confidence}) to Lab Notebook.`);
+    }
+
+    function renderObservationLog() {
+      const container = document.getElementById("observationLogList");
+      const exportBtn = document.getElementById("exportCsvBtn");
+      const clearBtn = document.getElementById("clearLogBtn");
+
+      if (observationLog.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 italic py-4 text-center">No observations recorded yet. Scan an object and click "Record to Lab Notebook".</p>`;
+        exportBtn.disabled = true;
+        clearBtn.disabled = true;
+        return;
+      }
+
+      exportBtn.disabled = false;
+      clearBtn.disabled = false;
+      container.innerHTML = "";
+
+      observationLog.forEach((item, idx) => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/90 border border-slate-200 text-xs";
+        row.innerHTML = `
+          <div class="min-w-0">
+            <p class="font-bold text-slate-900 truncate">#${observationLog.length - idx} • ${escapeHtml(item.detectedClass)}</p>
+            <p class="text-[11px] text-slate-500 truncate">${escapeHtml(item.timestamp)} • ${escapeHtml(item.source)}</p>
+          </div>
+          <span class="font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0">${item.confidence}</span>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function clearObservationLog() {
+      observationLog = [];
+      renderObservationLog();
+      showToast("🧹", "Lab Notebook cleared.");
+    }
+
+    function exportLogToCSV() {
+      if (observationLog.length === 0) return;
+      const headers = ["Timestamp", "Source", "Detected_Class", "Confidence"];
+      const rows = observationLog.map(r => [
+        `"${r.isoDate}"`,
+        `"${r.source.replace(/"/g, '""')}"`,
+        `"${r.detectedClass.replace(/"/g, '""')}"`,
+        `"${r.confidence}"`
+      ].join(","));
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `campus-ai-lab-observations-${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("📥", "Exported Lab Notebook as CSV!");
+    }
+
+    /**
+     * UI Helpers: Toast & HTML Sanitizer
+     */
+    let toastTimeout = null;
+    function showToast(emoji, msg) {
+      const toast = document.getElementById("classroomToast");
+      document.getElementById("toastEmoji").textContent = emoji;
+      document.getElementById("toastMessage").textContent = msg;
+      toast.classList.remove("hidden");
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 3400);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
   </script>
 </body>
 </html>
