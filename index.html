@@ -3,37 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>School Supplies AI Classifier — Classroom Edition</title>
-  <!-- Google Fonts for Classroom Feel -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <title>School Supplies AI Classifier — Live Demo</title>
   <!-- TensorFlow.js & Teachable Machine Image Library -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
   <style>
     :root {
-      --desk-bg: #f3e5ab;
-      --desk-grain: #ebd892;
-      --chalkboard: #1f4031;
-      --chalkboard-dark: #162e23;
-      --wood-frame: #8b5a2b;
-      --wood-dark: #5c3a1a;
-      --paper: #fffdf7;
-      --ruled-line: #cfe2f3;
-      --margin-red: #f28b82;
-      --ink: #1e293b;
-      --ink-muted: #475569;
-      --pencil-yellow: #facc15;
-      --pencil-hover: #eab308;
-      --eraser-pink: #f43f5e;
-      --eraser-hover: #e11d48;
-      --marker-blue: #2563eb;
-      --highlighter-green: #22c55e;
-      --sticky-yellow: #fef08a;
-      --sticky-blue: #bae6fd;
-      --sticky-pink: #fbcfe8;
-      --sticky-green: #bbf7d0;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-hover: #334155;
+      --border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #10b981;
+      --danger: #ef4444;
+      --radius: 14px;
     }
 
     * {
@@ -43,55 +29,701 @@
     }
 
     body {
-      font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--desk-bg);
-      background-image:
-        repeating-linear-gradient(
-          90deg,
-          rgba(139, 90, 43, 0.04) 0px,
-          rgba(139, 90, 43, 0.04) 2px,
-          transparent 2px,
-          transparent 18px
-        ),
-        radial-gradient(circle at top, #f7ecc1, var(--desk-grain));
-      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
       line-height: 1.6;
       padding-bottom: 4rem;
     }
 
-    /* Chalkboard Header */
     header {
-      background: radial-gradient(circle at center, var(--chalkboard) 0%, var(--chalkboard-dark) 100%);
-      border-bottom: 12px solid var(--wood-frame);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 -4px 0 var(--wood-dark);
-      padding: 2.75rem 1.5rem 2.5rem;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 1.5rem;
       text-align: center;
-      color: #f8fafc;
-      position: relative;
-    }
-
-    /* Chalk tray & eraser decoration */
-    header::after {
-      content: "";
-      position: absolute;
-      bottom: -16px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 140px;
-      height: 10px;
-      background: #e2e8f0;
-      border-radius: 4px;
-      box-shadow: 35px 0 0 #38bdf8, -45px 0 0 #f43f5e;
     }
 
     .badge {
       display: inline-block;
-      font-family: "Patrick Hand", cursive;
-      font-size: 1.1rem;
-      letter-spacing: 0.04em;
-      background: rgba(255, 255, 255, 0.12);
-      color: #fde047;
-      border: 1.5px dashed rgba(253, 224, 71, 0.65);
-      padding: 0.25rem 0.9rem;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 0.25rem 0.75rem;
       border-radius: 999px;
-      margin
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 4vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+    }
+
+    header p {
+      max-width: 680px;
+      margin: 0 auto;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 0;
+    }
+
+    /* Status Banner */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.9rem 1.25rem;
+      border-radius: var(--radius);
+      margin-bottom: 2rem;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #eab308;
+      box-shadow: 0 0 8px #eab308;
+    }
+
+    .dot.ready {
+      background-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .dot.error {
+      background-color: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+    }
+
+    /* Main Workspace Grid */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1.75rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (max-width: 850px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Mode Tabs */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      background: var(--bg);
+      padding: 0.35rem;
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Viewport Box */
+    .viewport {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 380px;
+      background: #0b1120;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      margin: 0 auto 1.25rem;
+    }
+
+    .viewport canvas,
+    .viewport img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .placeholder-text {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.35rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #dc2626;
+    }
+
+    .file-label {
+      background: var(--primary);
+      color: white;
+      padding: 0.75rem 1.35rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-block;
+      transition: background 0.2s ease;
+    }
+
+    .file-label:hover {
+      background: var(--primary-hover);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    /* Predictions Panel */
+    .top-result {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 12px;
+      padding: 1.15rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .top-result-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .top-result-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      margin-top: 0.2rem;
+      color: #fff;
+    }
+
+    .bars-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 12px;
+      background: var(--bg);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      border-radius: 999px;
+      transition: width 0.2s ease, background-color 0.2s ease;
+    }
+
+    .bar-fill.winner {
+      background: var(--accent);
+    }
+
+    /* Community Significance Section */
+    .community-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.25rem;
+    }
+
+    .community-header {
+      max-width: 750px;
+      margin-bottom: 2rem;
+    }
+
+    .community-header h2 {
+      font-size: 1.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .community-header p {
+      color: var(--text-muted);
+    }
+
+    .impact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .impact-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.35rem;
+    }
+
+    .impact-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: #60a5fa;
+    }
+
+    .impact-card p {
+      font-size: 0.93rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    footer a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="badge">School Supplies AI Classifier</span>
+    <h1>Smart Classroom Supply Identifier</h1>
+    <p>
+      Test your Teachable Machine model in real time. Use your live webcam or upload a photo of classroom materials to instantly identify items with confidence metrics.
+    </p>
+  </header>
+
+  <main class="container">
+    <!-- Model Connection Status -->
+    <div class="status-bar">
+      <div class="status-indicator">
+        <span id="status-dot" class="dot"></span>
+        <span id="status-text">Loading model weights from Google Teachable Machine...</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Model ID: <code>bqIf4W5_E</code>
+      </div>
+    </div>
+
+    <!-- Interactive Model Tester -->
+    <section class="workspace" aria-label="AI Model Testing Area">
+      <!-- Left Card: Input Source -->
+      <div class="card">
+        <h2>1. Choose Input Source</h2>
+        <div class="tabs">
+          <button id="tab-webcam" class="tab-btn active" onclick="switchMode('webcam')">Live Webcam</button>
+          <button id="tab-upload" class="tab-btn" onclick="switchMode('upload')">Upload Image</button>
+        </div>
+
+        <!-- Webcam Mode -->
+        <div id="webcam-panel">
+          <div id="webcam-viewport" class="viewport">
+            <div class="placeholder-text" id="webcam-placeholder">
+              Click <strong>Start Webcam</strong> below to begin live real-time detection.
+            </div>
+          </div>
+          <div class="controls">
+            <button id="start-cam-btn" class="btn" onclick="startWebcam()" disabled>Start Webcam</button>
+            <button id="stop-cam-btn" class="btn btn-danger hidden" onclick="stopWebcam()">Stop Webcam</button>
+          </div>
+        </div>
+
+        <!-- Upload Mode -->
+        <div id="upload-panel" class="hidden">
+          <div id="upload-viewport" class="viewport" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+            <div class="placeholder-text" id="upload-placeholder">
+              Drag & drop a school supply photo here, or click <strong>Choose Image</strong>.
+            </div>
+            <img id="preview-image" class="hidden" alt="Uploaded preview for classification" />
+          </div>
+          <div class="controls">
+            <label for="image-upload" class="file-label">Choose Image</label>
+            <input type="file" id="image-upload" accept="image/*" onchange="handleImageUpload(event)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Card: Visual Feedback -->
+      <div class="card">
+        <h2>2. Classification Results</h2>
+
+        <div class="top-result">
+          <div class="top-result-label">Top Identified Supply</div>
+          <div id="top-prediction" class="top-result-value">Waiting for input...</div>
+        </div>
+
+        <div id="bars-container" class="bars-container">
+          <p style="color: var(--text-muted); font-size: 0.92rem; text-align: center;">
+            Probability bars will appear once the model finishes loading.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Community Significance Section -->
+    <section class="community-section" aria-labelledby="community-heading">
+      <div class="community-header">
+        <h2 id="community-heading">Significance to Our School & Community</h2>
+        <p>
+          Automated object recognition brings practical efficiency to classrooms, libraries, and community resource centers, making organization seamless and engaging.
+        </p>
+      </div>
+
+      <div class="impact-grid">
+        <div class="impact-card">
+          <h3>Classroom Organization</h3>
+          <p>
+            Helps students and teachers quickly sort, categorize, and inventory shared supplies like pencils, notebooks, and scissors efficiently.
+          </p>
+        </div>
+
+        <div class="impact-card">
+          <h3>Privacy-First Design</h3>
+          <p>
+            All webcam feeds and uploaded images are processed locally in your browser using TensorFlow.js. No private photos ever leave your device.
+          </p>
+        </div>
+
+        <div class="impact-card">
+          <h3>Interactive STEM Learning</h3>
+          <p>
+            Provides students with a hands-on window into artificial intelligence, demonstrating how neural networks interpret objects and compute confidence scores.
+          </p>
+        </div>
+
+        <div class="impact-card">
+          <h3>Resource Accessibility</h3>
+          <p>
+            Runs smoothly on standard school laptops and mobile devices without requiring expensive software installations or cloud server setups.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    GitHub Pages Project • Built with <a href="https://teachablemachine.withgoogle.com/" target="_blank" rel="noopener">Google Teachable Machine</a>
+  </footer>
+
+  <script>
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/bqIf4W5_E/";
+
+    let model = null;
+    let webcam = null;
+    let maxPredictions = 0;
+    let isWebcamRunning = false;
+    let animationFrameId = null;
+    let currentMode = "webcam";
+
+    const statusDot = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
+    const startCamBtn = document.getElementById("start-cam-btn");
+    const stopCamBtn = document.getElementById("stop-cam-btn");
+    const barsContainer = document.getElementById("bars-container");
+    const topPredictionEl = document.getElementById("top-prediction");
+
+    async function loadModel() {
+      try {
+        const modelURL = MODEL_URL + "model.json";
+        const metadataURL = MODEL_URL + "metadata.json";
+
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        const classLabels = model.getClassLabels();
+        barsContainer.innerHTML = "";
+        classLabels.forEach((label, index) => {
+          const item = document.createElement("div");
+          item.className = "bar-item";
+          item.innerHTML = `
+            <div class="bar-header">
+              <span id="label-${index}">${label}</span>
+              <span id="percent-${index}">0%</span>
+            </div>
+            <div class="bar-track">
+              <div id="fill-${index}" class="bar-fill"></div>
+            </div>
+          `;
+          barsContainer.appendChild(item);
+        });
+
+        statusDot.classList.add("ready");
+        statusText.textContent = `Model ready (${maxPredictions} categories loaded)`;
+        startCamBtn.disabled = false;
+      } catch (err) {
+        console.error("Failed to load model:", err);
+        statusDot.classList.add("error");
+        statusText.textContent = "Error loading model. Check your network connection.";
+      }
+    }
+
+    function switchMode(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
+
+      document.getElementById("tab-webcam").classList.toggle("active", mode === "webcam");
+      document.getElementById("tab-upload").classList.toggle("active", mode === "upload");
+
+      document.getElementById("webcam-panel").classList.toggle("hidden", mode !== "webcam");
+      document.getElementById("upload-panel").classList.toggle("hidden", mode !== "upload");
+
+      if (mode === "upload" && isWebcamRunning) {
+        stopWebcam();
+      }
+      resetBars();
+    }
+
+    async function startWebcam() {
+      if (!model || isWebcamRunning) return;
+
+      try {
+        startCamBtn.disabled = true;
+        startCamBtn.textContent = "Starting camera...";
+
+        const flip = true;
+        webcam = new tmImage.Webcam(380, 380, flip);
+        await webcam.setup();
+        await webcam.play();
+
+        const viewport = document.getElementById("webcam-viewport");
+        document.getElementById("webcam-placeholder").classList.add("hidden");
+        viewport.appendChild(webcam.canvas);
+
+        isWebcamRunning = true;
+        startCamBtn.classList.add("hidden");
+        startCamBtn.disabled = false;
+        startCamBtn.textContent = "Start Webcam";
+        stopCamBtn.classList.remove("hidden");
+
+        animationFrameId = window.requestAnimationFrame(webcamLoop);
+      } catch (err) {
+        console.error("Webcam error:", err);
+        alert("Could not access the webcam. Please allow camera permissions in your browser.");
+        startCamBtn.disabled = false;
+        startCamBtn.textContent = "Start Webcam";
+      }
+    }
+
+    function stopWebcam() {
+      isWebcamRunning = false;
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+      if (webcam) {
+        webcam.stop();
+        if (webcam.canvas && webcam.canvas.parentNode) {
+          webcam.canvas.parentNode.removeChild(webcam.canvas);
+        }
+        webcam = null;
+      }
+      document.getElementById("webcam-placeholder").classList.remove("hidden");
+      stopCamBtn.classList.add("hidden");
+      startCamBtn.classList.remove("hidden");
+      resetBars();
+    }
+
+    async function webcamLoop() {
+      if (!isWebcamRunning) return;
+      webcam.update();
+      await predict(webcam.canvas);
+      animationFrameId = window.requestAnimationFrame(webcamLoop);
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      const file = event.dataTransfer.files[0];
+      if (file && file.type.startsWith("image/")) {
+        processImageFile(file);
+      }
+    }
+
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        processImageFile(file);
+      }
+    }
+
+    function processImageFile(file) {
+      if (!model) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = document.getElementById("preview-image");
+        img.src = e.target.result;
+        img.classList.remove("hidden");
+        document.getElementById("upload-placeholder").classList.add("hidden");
+
+        img.onload = async function () {
+          await predict(img);
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function predict(inputElement) {
+      const predictions = await model.predict(inputElement);
+
+      let highestProb = -1;
+      let bestClass = "";
+
+      predictions.forEach((pred, i) => {
+        const percentage = Math.round(pred.probability * 100);
+        const fillEl = document.getElementById(`fill-${i}`);
+        const percentEl = document.getElementById(`percent-${i}`);
+
+        if (fillEl && percentEl) {
+          fillEl.style.width = `${percentage}%`;
+          percentEl.textContent = `${percentage}%`;
+          fillEl.classList.remove("winner");
+        }
+
+        if (pred.probability > highestProb) {
+          highestProb = pred.probability;
+          bestClass = pred.className;
+        }
+      });
+
+      predictions.forEach((pred, i) => {
+        if (pred.className === bestClass && highestProb > 0.1) {
+          const fillEl = document.getElementById(`fill-${i}`);
+          if (fillEl) fillEl.classList.add("winner");
+        }
+      });
+
+      topPredictionEl.textContent = `${bestClass} (${Math.round(highestProb * 100)}%)`;
+    }
+
+    function resetBars() {
+      topPredictionEl.textContent = "Waiting for input...";
+      for (let i = 0; i < maxPredictions; i++) {
+        const fillEl = document.getElementById(`fill-${i}`);
+        const percentEl = document.getElementById(`percent-${i}`);
+        if (fillEl && percentEl) {
+          fillEl.style.width = "0%";
+          percentEl.textContent = "0%";
+          fillEl.classList.remove("winner");
+        }
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", loadModel);
+  </script>
+</body>
+</html>
